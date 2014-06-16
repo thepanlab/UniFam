@@ -21,7 +21,7 @@ Envirionment Requirement
 Package contents
 ------------------------
 	1. *data*: UniFam databases, including the database in a whole, and two sub-databases, one for prokaryotic proteins and one for eukaryotic proteins specifically. 
-	The annotation files for the three databases and their aliases are also included. [Download](http://unifam.omicsbio.org/downloads)
+	The annotation files for the three databases and their aliases are also included. [Download](http://unifam.omicsbio.org/downloads).
 	2. *example*: a test example with input and output
 	3. *src*: python scripts for the pipeline
 
