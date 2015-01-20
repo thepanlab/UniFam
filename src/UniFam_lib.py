@@ -12,6 +12,7 @@ Copyright (c) 2014 JJ Chai (ORNL). All rights reserved.
 '''
 # Import Python modules
 from subprocess import Popen, PIPE, check_call, STDOUT
+import ConfigParser
 import sys, os
 import re
 import shutil
@@ -393,8 +394,12 @@ def write_org_param(config):
     org_param.write('{0:}\t{1:}\n'.format("PRIVATE?","NIL")) #PRIVATE? set to NIL as default value
     org_param.write('{0:}\t{1:}\n'.format("RANK","|strain|")) #RANK line
 
-    gffFile = config.get('prodigal','prodout')
-    org_param.write('{0:}\t{1:}\n'.format("CODON-TABLE",transl_table(gffFile))) # CODON-TABLE line
+    try:
+        gffFile = config.get('prodigal','prodout')
+        org_param.write('{0:}\t{1:}\n'.format("CODON-TABLE",transl_table(gffFile))) # CODON-TABLE line
+    except ConfigParser.NoOptionError:
+        org_param.write('{0:}\t{1:}\n'.format("CODON-TABLE",11)) # CODON-TABLE line
+
 
     
     # This option is removed
@@ -630,9 +635,9 @@ def genetic_element_gbk(config, outputAnnot):
     gbk = open(pathway_dir + "/" + annot_file,"w")
     
     ## protein coding genes:
-    gbk.write("FEATURES{0:13}Location/Qualifiers".format(' ')) # FEATURES             Location/Qualifiers
-    gbk.write("CDS{0:13}".format(' ')) # CDS line
+    gbk.write("FEATURES{0:13}Location/Qualifiers\n".format(' ')) # FEATURES             Location/Qualifiers
     for protein_name in annot:    
+        gbk.write("CDS{0:25}\n".format(' ')) # CDS line
         # get the annotation for proteins and write into .gbk file
         annot1 = annot[protein_name]
         write_gbk(annot1, gbk)
