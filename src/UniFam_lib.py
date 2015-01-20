@@ -628,6 +628,7 @@ def genetic_element_gbk(config, outputAnnot):
     annot_file = "CHRSM-0" + ".gbk"
     
     genetic_elem.write('{0:}\t{1:}\n'.format("ANNOT-FILE", annot_file)) #annotation file
+    genetic_elem.write('{0:}\t{1:}\n'.format("SEQ-FILE", ' ')) #sequence file
     genetic_elem.write("//\n") # indicator of end of current genetic element
     genetic_elem.close()
     
@@ -637,7 +638,7 @@ def genetic_element_gbk(config, outputAnnot):
     ## protein coding genes:
     gbk.write("FEATURES{0:13}Location/Qualifiers\n".format(' ')) # FEATURES             Location/Qualifiers
     for protein_name in annot:    
-        gbk.write("CDS{0:25}\n".format(' ')) # CDS line
+        gbk.write("{1:5}CDS{0:13}1..100000\n".format(' ',' ')) # CDS line
         # get the annotation for proteins and write into .gbk file
         annot1 = annot[protein_name]
         write_gbk(annot1, gbk)
