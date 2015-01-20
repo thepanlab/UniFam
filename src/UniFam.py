@@ -25,7 +25,7 @@ version_str = "1.0.0"
             all configuration options are in a file. User can(and must) change the options in the config file to customize.
     0.0.2.  Added more information for pathologic module of the analysis, and rRNA, tRNA            
             analysis.
-	1.0.0	First Stable version for release, UniFam 1.0.0
+    1.0.0   First Stable version for release, UniFam 1.0.0
 '''
 
 parser = argparse.ArgumentParser(description="Annotation of contigs/proteins using UniFam",

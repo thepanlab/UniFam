@@ -27,7 +27,7 @@ def read_fna(fna_file,trim=True,reverse=False):
         3. reverse: if true, seq => ID, instead of ID => seq
         Output
         1. dictionary object
-        '''
+    '''
     fna = open(fna_file,'r')
     ## all the contigs in a list
     contigs = fna.read().split('\n>')
@@ -356,7 +356,6 @@ def transl_table(gffFile):
 #    NCBI-TAXON-ID n
 ## =================================================================
 def write_org_param(config):
-    
     ''' generate organism_params.dat for a genome
         
         Input:
@@ -364,77 +363,77 @@ def write_org_param(config):
         
         Output:
         1. organism_params.dat: an input file for an organism
-        '''
+    '''
     inputformat = config.get('UniFam','inputFormat')
+    # print warning when the input format is not contig(s) or chromosome, instead they are proteins.
+    if inputformat != "contigs":
+        sys.stderr.write('** warning: {}\n'.format("Input is a list of proteins, will not do pathway reconstruction without the genome sequence information!"))
     
-    # only do pathway analyais if inputFormat is contigs (in fact, chromosome)
-    if inputformat == "contigs":
-        prefix = config.get('UniFam','name')
-        workdir = config.get('UniFam','workDir') + '/'
-        pathway_dir = workdir + prefix
-        
-        # set working directory for pathway analysis: pathway_dir, and save it in configuration file
-        config.set('PathoLogic','pathwayDir',pathway_dir)
-        # create directory to save the files for PathoLogic
-        if not os.path.exists(pathway_dir):
-            os.makedirs(pathway_dir)
-        
-        org_param_file = pathway_dir + "/organism-params.dat"
-        org_param = open(org_param_file,'w') # output file handle
+    prefix = config.get('UniFam','name')
+    workdir = config.get('UniFam','workDir') + '/'
+    pathway_dir = workdir + prefix
+    
+    # set working directory for pathway analysis: pathway_dir, and save it in configuration file
+    config.set('PathoLogic','pathwayDir',pathway_dir)
+    # create directory to save the files for PathoLogic
+    if not os.path.exists(pathway_dir):
+        os.makedirs(pathway_dir)
+    
+    org_param_file = pathway_dir + "/organism-params.dat"
+    org_param = open(org_param_file,'w') # output file handle
 
-        # databse ID
-        dbID = 'U' + prefix.upper()
-        organism = config.get('PathoLogic','organism')
+    # databse ID
+    dbID = 'U' + prefix.upper()
+    organism = config.get('PathoLogic','organism')
 
-        ## write in organism-params.dat file
-        org_param.write('{0:}\t{1:}\n'.format("ID",dbID)) #ID line
-        org_param.write('{0:}\t{1:}\n'.format("STORAGE","FILE")) #STORAGE line
-        org_param.write('{0:}\t{1:}\n'.format("NAME",organism)) #NAME line
-        org_param.write('{0:}\t{1:}\n'.format("PRIVATE?","NIL")) #PRIVATE? set to NIL as default value
-        org_param.write('{0:}\t{1:}\n'.format("RANK","|strain|")) #RANK line
+    ## write in organism-params.dat file
+    org_param.write('{0:}\t{1:}\n'.format("ID",dbID)) #ID line
+    org_param.write('{0:}\t{1:}\n'.format("STORAGE","FILE")) #STORAGE line
+    org_param.write('{0:}\t{1:}\n'.format("NAME",organism)) #NAME line
+    org_param.write('{0:}\t{1:}\n'.format("PRIVATE?","NIL")) #PRIVATE? set to NIL as default value
+    org_param.write('{0:}\t{1:}\n'.format("RANK","|strain|")) #RANK line
 
-        gffFile = config.get('prodigal','prodout')
-        org_param.write('{0:}\t{1:}\n'.format("CODON-TABLE",transl_table(gffFile))) # CODON-TABLE line
+    gffFile = config.get('prodigal','prodout')
+    org_param.write('{0:}\t{1:}\n'.format("CODON-TABLE",transl_table(gffFile))) # CODON-TABLE line
 
-        
-        # This option is removed
+    
+    # This option is removed
 #        mitoCodonTable = config.get('PathoLogic','mitoCodonTable')
 #        # MITO-CODON-TABLE line if not default. Delete this option
 #        if mitoCodonTable != '1':
 #            org_param.write('{0:}\t{1:}\n'.format("MITO-CODON-TABLE",mitoCodonTable))
 
-        org_param.write('{0:}\t{1:}\n'.format("DBNAME",dbID + "Cyc")) #DBNAME line
-        org_param.write('{0:}\t{1:}\n'.format("CREATE?","t")) #CREATE? line
+    org_param.write('{0:}\t{1:}\n'.format("DBNAME",dbID + "Cyc")) #DBNAME line
+    org_param.write('{0:}\t{1:}\n'.format("CREATE?","t")) #CREATE? line
 
-        # reset the database name in configuration file
-        config.set('PathoLogic','dbName',dbID.lower()+"cyc")
+    # reset the database name in configuration file
+    config.set('PathoLogic','dbName',dbID.lower()+"cyc")
 
-        ## domain in taxonomy
-        Domain = config.get('PathoLogic','domain')
-        ## do not deal with viruses and uncategorized organisms
-        if Domain == "bac":
-            org_param.write('{0:}\t{1:}\n'.format("DOMAIN","TAX-2")) #DOMAIN line, bacteria
-        elif Domain == "arc":
-            org_param.write('{0:}\t{1:}\n'.format("DOMAIN","TAX-2157")) #DOMAIN line, archaea
+    ## domain in taxonomy
+    Domain = config.get('PathoLogic','domain')
+    ## do not deal with viruses and uncategorized organisms
+    if Domain == "bac":
+        org_param.write('{0:}\t{1:}\n'.format("DOMAIN","TAX-2")) #DOMAIN line, bacteria
+    elif Domain == "arc":
+        org_param.write('{0:}\t{1:}\n'.format("DOMAIN","TAX-2157")) #DOMAIN line, archaea
 
-        ## For now, only deal with prokaryotic genomes (this is not used, but probably in future)
-        elif Domain == "euk":
-            org_param.write('{0:}\t{1:}\n'.format("DOMAIN","TAX-2759")) #DOMAIN line, eukaryota
-        else:
-            org_param.write('{0:}\t{1:}\n'.format("DOMAIN","TAX-131567")) #DOMAIN line, biological orgainisms
-        
-        # NCBI-TAXON-ID line
-        taxID = config.get('PathoLogic','taxID')
-        if taxID != "unknown":
-            org_param.write('{0:}\t{1:}\n'.format("NCBI-TAXON-ID",taxID)) #DOMAIN line
-        ## finish writing the file
-        org_param.close()
+    ## For now, only deal with prokaryotic genomes (this is not used, but probably in future)
+    elif Domain == "euk":
+        org_param.write('{0:}\t{1:}\n'.format("DOMAIN","TAX-2759")) #DOMAIN line, eukaryota
     else:
-        sys.stderr.write('** {}\n'.format("Input is a list of proteins, will not do pathway reconstruction!"))
+        org_param.write('{0:}\t{1:}\n'.format("DOMAIN","TAX-131567")) #DOMAIN line, biological orgainisms
+    
+    # NCBI-TAXON-ID line
+    taxID = config.get('PathoLogic','taxID')
+    if taxID != "unknown":
+        org_param.write('{0:}\t{1:}\n'.format("NCBI-TAXON-ID",taxID)) #DOMAIN line
+    ## finish writing the file
+    org_param.close()
 
 ## =================================================================
 ## write the genetic-element.dat for one genome
 ## Also write corresponding .faa, .fna files
+## This function works for contigs input, not the protein only input
 ## ================================================================
 def genetic_element_gbk(inputfna, config, outputAnnot):
     ''' From the configuration for directories, and annotation file for a genome,
@@ -454,7 +453,7 @@ def genetic_element_gbk(inputfna, config, outputAnnot):
     # annotation for the proteins, from the output annotation flat file
     annot = read_annot(outputAnnot)
     
-    # read rRNA and tRNA output
+    # read rRNA and tRNA output, TODO what if they do not exist?
     rRNAoutput = config.get('RNAmmer','rRNAoutput')
     rrna_dict = read_rnammer_gff(rRNAoutput)
     tRNAoutput = config.get('tRNAscan','tRNAoutput')
@@ -589,6 +588,56 @@ def genetic_element_gbk(inputfna, config, outputAnnot):
 
         gbk.close()
     genetic_elem.close()
+
+## =================================================================
+## write the genetic-element.dat 
+## Also write corresponding .faa files
+## This function works for protein input, instead of contigs where
+## genome sequence is available
+## ================================================================
+def genetic_element_gbk(config, outputAnnot):
+    ''' From the configuration for directories, and annotation file for a genome,
+        generate the file "genetic-element.dat", and related files for each contig/genetic element.
+        Each genetic element should have its own .fna sequence file and .gbk annotation file.
+        
+        Input:  1. inputfna: user input fna file for contigs
+                2. config: ConfigParser() object
+                3. outputAnnot: annotation file for all the proteins in the contigs
+        Output: genetic-element.dat, CHRSM-*.fna, CHRSM-*.gbk files for pathway reconstruction with pathway-tools
+    '''
+    # directory to store the files for pathologic
+    pathway_dir = config.get('PathoLogic','pathwayDir')
+    
+    # annotation for the proteins, from the output annotation flat file
+    annot = read_annot(outputAnnot)
+    
+    # write file: genetic-elements.dat
+    genetic_elem_file =  pathway_dir + "/genetic-elements.dat" # genetic-elements.dat file name
+    genetic_elem = open(genetic_elem_file,'w') # file object for the genetic-elements.dat file
+    
+
+    genetic_elem.write('{0:}\t{1:}\n'.format("ID", "CHRSM-0")) # id of this genetic element
+    genetic_elem.write('{0:}\t:{1:}\n'.format("TYPE", "CHRSM")) # chromosome, or plasmid, or other
+    genetic_elem.write('{0:}\t{1:}\n'.format("CIRCULAR?", "Y")) #circular or not
+
+    annot_file = "CHRSM-0" + ".gbk"
+    
+    genetic_elem.write('{0:}\t{1:}\n'.format("ANNOT-FILE", annot_file)) #annotation file
+    genetic_elem.write("//\n") # indicator of end of current genetic element
+    genetic_elem.close()
+    
+    ## write the annotation file for this genetic element
+    gbk = open(pathway_dir + "/" + annot_file,"w")
+    
+    ## protein coding genes:
+    gbk.write("FEATURES{0:13}Location/Qualifiers".format(' ')) # FEATURES             Location/Qualifiers
+    gbk.write("CDS{0:13}".format(' ')) # CDS line
+    for protein_name in annot:    
+        # get the annotation for proteins and write into .gbk file
+        annot1 = annot[protein_name]
+        write_gbk(annot1, gbk)
+
+    gbk.close()
 
 ## =================================================================
 ## write gbk file for a contig/chromosome/plasmid,
@@ -852,7 +901,7 @@ def UniFam(inputfile, config):
     prefix = config.get('UniFam','name')
     inputformat = config.get('UniFam','inputFormat')
     workdir = config.get('UniFam','workDir') + '/'
-    outputAnnot = workdir + prefix + ".annot"
+    outputAnnot = workdir + prefix + ".annot" # flat file with annotation for each protein
     outputfaa = workdir + prefix + '_annot.faa' # faa with annotation at the header lines
     # if working directory does not exist, create the directory
     if not os.path.exists(workdir):
@@ -966,23 +1015,27 @@ def UniFam(inputfile, config):
 
 
     if doPwy:
+        # If the input is not contigs, then the genomic sequence is missing, print warning message.
         if inputformat!="contigs":
-            sys.stderr.write('** {}\n'.format('Input format is not "contigs", check the config file'))
-        else:
-            sys.stdout.write("===== >> {} \n ".format(str(datetime.now()))) # print current time
-            sys.stdout.write('[UniFam] >> preparing files for pathway reconstruction... \n')
-            write_org_param(config)
+            sys.stderr.write('** warning: {}\n'.format('Input format is not "contigs", find pathways using provided proteins'))
+        
+        sys.stdout.write("===== >> {} \n ".format(str(datetime.now()))) # print current time
+        sys.stdout.write('[UniFam] >> preparing files for pathway reconstruction... \n')
+        write_org_param(config)
+        if inputformat == "contigs":
             genetic_element_gbk(inputfile, config, outputAnnot)
-            pwyCmd = PathoLogicCmd(config)
-            sys.stdout.write('[UniFam] >> Reconstructing pathways... \n\n')
-            pwy_proc =Popen(pwyCmd, shell = True, stdout=None, stderr=None)
-            pwy_status = pwy_proc.wait()
-            if pwy_status != 0:
-                sys.stderr.write('{} failed \n'.format(pwyCmd))
-            else:
-                sys.stdout.write('[UniFam] >> Pathway reconstruction finished. \n')
-            sys.stdout.write("===== >> {} \n\n ".format(str(datetime.now()))) # print current time
-            ## move the pathway inference results to the working directory
-            dbName = config.get('PathoLogic','dbName')
-            pwyLocalDir = config.get('PathoLogic','PathwayLocalDir')
-            shutil.move(pwyLocalDir+dbName,workdir+dbName)
+        else:
+            genetic_element_gbk(config, outputAnnot)
+        pwyCmd = PathoLogicCmd(config)
+        sys.stdout.write('[UniFam] >> Reconstructing pathways... \n\n')
+        pwy_proc =Popen(pwyCmd, shell = True, stdout=None, stderr=None)
+        pwy_status = pwy_proc.wait()
+        if pwy_status != 0:
+            sys.stderr.write('{} failed \n'.format(pwyCmd))
+        else:
+            sys.stdout.write('[UniFam] >> Pathway reconstruction finished. \n')
+        sys.stdout.write("===== >> {} \n\n ".format(str(datetime.now()))) # print current time
+        ## move the pathway inference results to the working directory
+        dbName = config.get('PathoLogic','dbName')
+        pwyLocalDir = config.get('PathoLogic','PathwayLocalDir')
+        shutil.move(pwyLocalDir+dbName,workdir+dbName)
