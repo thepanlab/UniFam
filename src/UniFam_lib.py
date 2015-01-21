@@ -905,6 +905,9 @@ def run_tRNAscan(config):
 def UniFam(inputfile, config):
     # common prefix for the output files
     prefix = config.get('UniFam','name')
+    if prefix.find(" ") != -1:
+	    prefix = re.sub(" ", "_", prefix)
+	    config.set('UniFam', 'name', prefix)
     inputformat = config.get('UniFam','inputFormat')
     workdir = config.get('UniFam','workDir') + '/'
     outputAnnot = workdir + prefix + ".annot" # flat file with annotation for each protein
@@ -980,6 +983,7 @@ def UniFam(inputfile, config):
     doHMM = config.getboolean('UniFam','dohmmsearch')
     if doHMM:
         hmmsearchCmd = hmmsearchCmdPrefix + ' ' + inputfaa # hmmsearch system command
+	sys.stdout.write("hmmsearch command: {}\n".format(hmmsearchCmd))
         sys.stdout.write("===== >> {} \n ".format(str(datetime.now()))) # print current time
         sys.stdout.write('[hmmsearch] >> hmmsearch ... \n')
         hmm_proc = Popen(hmmsearchCmd, shell = True, stdout=None, stderr=None)
