@@ -46,4 +46,5 @@ Instructions
 
 Update 
 ------------------------
-	v1.1 Added script to generate GenBank file for NCBI submission for Eukaryotic organisms. Contigs, protein sequences, genmark .gtf, and Unifam .annot files are required for this function.
+	v1.1 Added script to generate GenBank file for NCBI submission for Eukaryotic organisms. 
+	     Contigs, protein sequences, genmark .gtf, and Unifam .annot files are required for this function.
