@@ -89,7 +89,7 @@ def gbkGen(gtfFile, faaFile, fnaFile, outputPrefix, annotFile=None):
                 gbk.write("{:12}{}\n".format("KEYWORDS", "."))
                 gbk.write("FEATURES{0:13}Location/Qualifiers\n".format(' ')) # FEATURES             Location/Qualifiers
 
-                gbk.write("{:5}{:16}1..{}\n".format(' ','source', "length")) # several placeholders
+                gbk.write("{:5}{:16}1..{}\n".format(' ','source', len(contigs_seq[contig]))) # several placeholders
                 gbk.write("{:21}{}\n".format(' ', '/mol_type="genomic DNA"')) 
                 gbk.write("{:21}{}\n".format(' ', '/organism="organism name"')) 
                 gbk.write("{:21}{}\n".format(' ', '/note="note"')) 
@@ -276,8 +276,6 @@ def read_gtf(gtf):
     record = ""
     line = gtf.readline() # read a line from the gtf file
     while line != '':
-        print line
-
         # ignore lines starting with # or empty lines
         if line[0] == "#" or line=="\n": # ignore comment lines or blank lines
             line = gtf.readline()
@@ -334,7 +332,6 @@ def extract_info(gtf_record):
         if strand == "-":
             location_string = "complement(" + location_string + ")"
         locations.append(location_string)
-    print locations
     return [contig, "join(" + ','.join(locations) + ")" if len(locations) > 1 else locations[0], geneID]
 
 
