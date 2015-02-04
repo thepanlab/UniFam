@@ -131,6 +131,7 @@ def write_gbk(geneID, annot, gbk):
     '''
     ## ## /gene="gap",(required) /alt_name="gad", /alt_name="foo"
     if geneID in annot:
+        annot_prot = annot[geneID]
         gene_names = annot_prot["gene_name"].split(":")
         if gene_names[0] != "NA":
             gbk.write('{0:21}{1:}\n'.format(' ','/gene="' + gene_names[0] + '"'))
