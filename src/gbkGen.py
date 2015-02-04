@@ -67,7 +67,8 @@ def gbkGen(gtfFile, faaFile, fnaFile, outputPrefix, annotFile=None):
     datenow = time.strftime("%d-%b-%Y")
     #print datenow
     with open(gtfFile) as gtf:
-        for contig, frame, location_string, geneID in read_gtf(gtf):
+        for gene_record in read_gtf(gtf):
+            contig,location_string, geneID = extract_info(gene_record)
             if contig != previous_contig:
                 # close the file for the old contig
                 if previous_contig != "null":
@@ -76,7 +77,7 @@ def gbkGen(gtfFile, faaFile, fnaFile, outputPrefix, annotFile=None):
                     write_fna(contigs_seq[contig], gbk) # write genome nucleotide sequence at the end
                     gbk.write("//\n")
                     gbk.close() 
-                    break
+                    #break
 
                 previous_contig = contig # current contig becomes "previous_contig"
 
@@ -101,6 +102,12 @@ def gbkGen(gtfFile, faaFile, fnaFile, outputPrefix, annotFile=None):
             gbk.write('{:21}{}{}\n'.format(' ','/transl_table=','1')) 
             write_gbk(geneID, annot, gbk)
             locus_tag = locus_tag + 1
+        gbk.write('{0:6}\n'.format("ORIGIN")) # write the whole genome sequence in the end
+        #gbk.write('{0:>9} {}\n'.format(1, 'acgt...'))
+        write_fna(contigs_seq[contig], gbk) # write genome nucleotide sequence at the end
+        gbk.write("//\n")
+        gbk.close() 
+
 
 
 def write_protein_seq(seq, gbk):
@@ -283,61 +290,51 @@ def read_gtf(gtf):
             yield record[:-1] # do no include the last \n
             record = ""
             CDS = False
+        line = gtf.readline()
             
-def extrace_info(gtf_record):
+def extract_info(gtf_record):
+    start = False
+    stop = False
+    CDS_start = 1
+    locations = []
     lines = gtf_record.split('\n') # split the record by EOL
-    for line in lines:
-        next_contig, source, feature, start_pos, end_pos, score, strand, frame, attribute = line.split("\t") # each field of the line
-        geneID = attribute[(attribute.find('"') + 1):attribute.find('"',attribute.find('"')+1)] # gene id
-        if next_geneID != this_geneID:
-            if this_geneID != "":
-                print locations
-                yield [contig, frame, "join(" + ",".join(locations) + ")" if len(locations) > 1 else locations[0], geneID]
-            this_geneID = next_geneID
-            start_codon = False
-            stop_codon = False
-            CDS = False
-            locations = []
-            contig = next_contig
-            if feature == "start_codon" and not CDS:
-                start_codon = True
-                start_codon_pos = start_pos
+    line = lines[0]
+    contig, source, feature, start_pos, end_pos, score, strand, frame, attribute = line.split("\t") # each field of the line
+    geneID = attribute[(attribute.find('"') + 1):attribute.find('"',attribute.find('"')+1)] # gene id
+    if feature == "start_codon":
+        start = True
+        start_codon_pos = start_pos
+    elif feature == "CDS":
+        CDS_start = 0
 
+    line = lines[-1]
+    contig, source, feature, start_pos, end_pos, score, strand, frame, attribute = line.split("\t") # each field of the line
+    if feature == "stop_codon":
+        stop = True
+        stop_codon_pos = end_pos
+
+    for i in xrange(CDS_start,len(lines)-1): # CDS line
+        line = lines[i]
+        contig, source, feature, start_pos, end_pos, score, strand, frame, attribute = line.split("\t") # each field of the line
+        if feature != "CDS": 
+            sys.stderr.out("formatting problem:\n{}\n".format(gtf_record)) # all these lines should have feature "CDS"
             break
-        else:
-            if feature == "start_codon" and CDS:
-                stop_codon = False
-                location_string = location_string + ">" + last_end_pos + (")" if complement else "")
-                locations.append(location_string)
-                print locations
-            elif feature == "stop_codon" and CDS:
-                stop_codon = True
-                stop_codon_pos = end_pos
-                if stop_condon and  last_end_pos == end_pos and frame == 0: # stop is not partial
-                    location_string = location_string + last_end_pos + (")" if complement else "")
-                else:
-                    location_string = location_string + ">" + last_end_pos + (")" if complement else "")
-                locations.append(location_string)
-                print locations
-
-            elif feature == "CDS":
-                if not CDS:
-                    CDS = True
-                else:
-                    location_string = location_string + ">" + end_pos + (")" if complement else "")
-                    locations.append(location_string)
-                    print locations
-                location_string = location_string + start_pos + ".."
-                last_end_pos = end_pos
-                if start_codon and start_codon_pos == start_pos and frame == 0:
-                    start_partial = False
-                else:
-                    start_partial = True
-                    location_string = "<" + location_string
-                if strand == "-":
-                    complement = True
-                    location_string= "complement(" + location_string
-    line = gtf.readline()
+        location_string = start_pos + ".."
+        if not start or start_pos != start_codon_pos or frame != '0': # partial at the start
+            location_string = "<" + location_string
+        if i == len(lines)-2: # If this line is the last line of the CDS lines
+            if not stop or end_pos != stop_codon_pos or frame != '0':
+                location_string = location_string + ">" + end_pos
+            else:
+                location_string = location_string + end_pos
+        else: # if not, then treat it as partial on the end
+            location_string = location_string + ">" + end_pos
+        # check the strand and see if it's on the complement strand
+        if strand == "-":
+            location_string = "complement(" + location_string + ")"
+        locations.append(location_string)
+    print locations
+    return [contig, "join(" + ','.join(locations) + ")" if len(locations) > 1 else locations[0], geneID]
 
 
 ## =================================================================
@@ -347,7 +344,7 @@ def main(argv=None):
     if argv is None:
         args = parser.parse_args()
     
-    if args.outputPrefix == "":
+    if args.outputPrefix == None:
         args.outputPrefix = os.path.abspath(args.faaFile).split('.')[0]
     ## print some information
     if args.verbose:
