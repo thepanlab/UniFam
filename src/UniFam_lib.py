@@ -440,7 +440,7 @@ def write_org_param(config):
 ## Also write corresponding .faa, .fna files
 ## This function works for contigs input, not the protein only input
 ## ================================================================
-def genetic_element_gbk(inputfna, config, outputAnnot):
+def genetic_element_gbk_contigs(inputfna, config, outputAnnot):
     ''' From the configuration for directories, and annotation file for a genome,
         generate the file "genetic-element.dat", and related files for each contig/genetic element.
         Each genetic element should have its own .fna sequence file and .gbk annotation file.
@@ -1033,7 +1033,7 @@ def UniFam(inputfile, config):
         sys.stdout.write('[UniFam] >> preparing files for pathway reconstruction... \n')
         write_org_param(config)
         if inputformat == "contigs":
-            genetic_element_gbk(inputfile, config, outputAnnot)
+            genetic_element_gbk_contigs(inputfile, config, outputAnnot)
         else:
             genetic_element_gbk(config, outputAnnot)
         pwyCmd = PathoLogicCmd(config)
