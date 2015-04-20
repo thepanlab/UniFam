@@ -942,7 +942,7 @@ def UniFam(inputfile, config, verbose=False):
             else:
                 sys.stdout.write('[prodigal] >> prodigal gene calling finished. \n')
                 readme.write("Prodigal predicted proteins are in file {}.\n".format(os.path.basename(config.get('prodigal', 'faa'))))
-                readme.write("Prodigal output in gbk format is {}.\n".format(os.path.basename(config.get('prodigal', 'out'))))
+                readme.write("Prodigal output in gbk format is {}.\n".format(os.path.basename(config.get('prodigal', 'prodout'))))
             sys.stdout.write("===== >> {} \n\n".format(str(datetime.now()))) # print current time
         else:
             sys.stdout.write('>> prodigal skipped. \n\n')
