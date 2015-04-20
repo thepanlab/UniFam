@@ -1070,7 +1070,7 @@ def UniFam(inputfile, config, verbose=False):
         shutil.move(pwyLocalDir+dbName,workdir+dbName)
         ## compress result with zip for user download
         dbzip = workdir+dbName+".zip"
-        compressCmd = "zip -r " + dbzip + " workdir+dbName"
+        compressCmd = "zip -r " + dbzip + " " + workdir+dbName
         zip_proc = Popen(compressCmd, shell = True, stdout=None, stderr=None)
         zip_status = zip_proc.wait()
         if zip_status != 0:
