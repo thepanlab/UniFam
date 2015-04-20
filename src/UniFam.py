@@ -6,7 +6,7 @@ UniFam.py
 pipeline
 
 Created by JJ Chai on 02/24/2014
-Last modified 04/01/2014
+Last modified Mon Apr 20 16:58:56 EDT 2015
 Copyright (c) 2014 JJ Chai (ORNL). All rights reserved.
 
 '''
@@ -20,12 +20,13 @@ from datetime import datetime
 import UniFam_lib # in this directory
 
 ## Version
-version_str = "1.0.0"
+version_str = "1.1.0"
 ''' 0.0.1.  first version of pipeline, including prodigal, hmmsearch, and annotation
             all configuration options are in a file. User can(and must) change the options in the config file to customize.
     0.0.2.  Added more information for pathologic module of the analysis, and rRNA, tRNA            
             analysis.
     1.0.0   First Stable version for release, UniFam 1.0.0
+    1.1.0   Added README file to describe output files; zip pathway inference output results
 '''
 
 parser = argparse.ArgumentParser(description="Annotation of contigs/proteins using UniFam",
@@ -41,6 +42,7 @@ parser.add_argument("--version", action="version",version='%(prog)s {}'.format(v
 
 ## --verbose mode, default: false (quiet mode)
 parser.add_argument("-v", "--verbose", action="store_true",help="verbose mode, more output")
+#parser.add_argument("-n", "--dryrun", action="store_true",help="dryrun, only print commands, do not execute")
 
 ## input files and directories
 ## configuration file, required
@@ -72,14 +74,14 @@ def main(argv=None):
     # display work start, and time record
     start_time = datetime.now()
     sys.stderr.write("\n===============================================================================\n")
-    sys.stderr.write("Start running: \n")
+    sys.stderr.write("Welcome to UniFam v{}: \n".format(version_str))
 
     # read configuration file
     config = ConfigParser.ConfigParser()
     config.read(args.configFile)
 
     # Annotating with UniFam
-    UniFam_lib.UniFam(args.inputFile,config)
+    UniFam_lib.UniFam(args.inputFile,config,args.verbose)
 
     # write the configuration file to standard output for checking
     # config.write(sys.stdout)

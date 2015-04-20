@@ -274,13 +274,13 @@ def read_tRNAscan(tRNAfile):
 ## =================================================================
 ## function to annotate proteins
 ## ================================================================
-def annot_proteins(groupfile, annot, outputfile, eval=0.00001):
+def annot_proteins(groupfile, annot, outputfile, Eval=0.00001):
     
     ''' Annotate proteins from resulting groupfile
         
         Input: 1. group file include group for each protein sequence in all genetic elements
         2. annotation of groups from swissprot (annotation for UniFam_prok, UniFam_euk, or UniFam)
-        3. eval: e-value cutoff for HMM hits of sequences
+        3. Eval: e-value cutoff for HMM hits of sequences
         
         Output: flat file for protein annotation
         '''
@@ -294,7 +294,7 @@ def annot_proteins(groupfile, annot, outputfile, eval=0.00001):
             geneID = line[0] # this sequence's unique ID
             groupID = line[1] # ID of this sequence's group
             evalue = float(line[2])
-            if evalue > eval: # if e-value is greater than the cutoff for identifying HMMs as hit
+            if evalue > Eval: # if e-value is greater than the cutoff for identifying HMMs as hit
                 continue
             
             ## write the annotation file
@@ -459,10 +459,14 @@ def genetic_element_gbk_contigs(inputfna, config, outputAnnot):
     annot = read_annot(outputAnnot)
     
     # read rRNA and tRNA output, TODO what if they do not exist?
-    rRNAoutput = config.get('RNAmmer','rRNAoutput')
-    rrna_dict = read_rnammer_gff(rRNAoutput)
-    tRNAoutput = config.get('tRNAscan','tRNAoutput')
-    trna_dict = read_tRNAscan(tRNAoutput)
+    dotRNAscan = config.getboolean('UniFam','dotRNAscan')
+    doRNAmmer = config.getboolean('UniFam','doRNAmmer')
+    if dotRNAscan:
+        tRNAoutput = config.get('tRNAscan','tRNAoutput')
+        trna_dict = read_tRNAscan(tRNAoutput)
+    if doRNAmmer:
+        rRNAoutput = config.get('RNAmmer','rRNAoutput')
+        rrna_dict = read_rnammer_gff(rRNAoutput)
 
     ## read the input fna file and find how many contigs are there in the file
     fna = open(inputfna,'r')
@@ -511,9 +515,9 @@ def genetic_element_gbk_contigs(inputfna, config, outputAnnot):
         
         contigs_info[seqnum] = {'seqID': seqhdr.split()[0], 'seqType': seqType, 'circular': circular}
     
-    sys.stdout.write('number of contigs in input fasta file: {}\n number of contigs in prodigal output: {}\n'.format(len(contigs), len(contigs_info)))
     if len(contigs) != len(contigs_info):
         sys.stderr.write('*** number of contigs in input fasta file is not equal to number of contigs in prodigal output!')
+    sys.stdout.write('number of contigs in input fasta file: {}\n'.format(len(contigs)))
     
     # write file: genetic-elements.dat
     genetic_elem_file =  pathway_dir + "/genetic-elements.dat" # genetic-elements.dat file name
@@ -582,12 +586,12 @@ def genetic_element_gbk_contigs(inputfna, config, outputAnnot):
                 gbk.write('{0:21}{1:}\n'.format(' ','/gene_comment="no annotation"'))
     
         # check the rRNA annotation
-        if rrna_dict.has_key(seqID):
+        if doRNAmmer and rrna_dict.has_key(seqID):
             rrna_list = rrna_dict[seqID]
             write_rRNA(rrna_list,gbk)
         
         # check the tRNA annotation
-        if trna_dict.has_key(seqID):
+        if dotRNAscan and trna_dict.has_key(seqID):
             trna_list = trna_dict[seqID]
             write_tRNA(trna_list,gbk)
 
@@ -724,7 +728,6 @@ def write_tRNA(trna_list,gbk):
 ## =================================================================
 
 def prodigalCmd(config):
-    
     # common prefix for the output files
     prefix = config.get('UniFam','name')
     
@@ -735,8 +738,8 @@ def prodigalCmd(config):
     config.set('prodigal','faa',faa)
     prodigalPath = config.get('prodigal','prodigalPath')
     
-    # output, prod.out
-    output = workdir + prefix + ".prod.out"
+    # output, *.prod.gbk
+    output = workdir + prefix + ".prod.gbk"
     config.set('prodigal','prodout',output)
     # options that are accepted and used here for prodigal
     runOffEdge = config.getboolean('prodigal','runOffEdge')
@@ -766,7 +769,7 @@ def hmmCmd(config):
     hmmsearchPath = config.get('hmmsearch','hmmsearchPath')
     
     # options for hmmsearch
-    eval = config.get('hmmsearch','eval')
+    Eval = config.get('hmmsearch','eval')
     cpu = config.get('hmmsearch','cpu')
     domtb = workdir + prefix + '.domtab'
     
@@ -784,7 +787,7 @@ def hmmCmd(config):
     annotFile = "Annot_" + database
     config.set('UniFam','annotFile', annotFile)
 
-    hmmsearchCmdPrefix = hmmsearchPath + ' -E ' + eval +' --noali --cpu ' + cpu + ' --domtblout ' + domtb + ' -o ' + output + ' ' + dataDir + database + '.hmm'
+    hmmsearchCmdPrefix = hmmsearchPath + ' -E ' + Eval +' --noali --cpu ' + cpu + ' --domtblout ' + domtb + ' -o ' + output + ' ' + dataDir + database + '.hmm'
 
     return hmmsearchCmdPrefix
 
@@ -902,19 +905,23 @@ def run_tRNAscan(config):
 ## =================================================================
 ## UniFam pipeline, for annotation
 ## =================================================================
-def UniFam(inputfile, config):
+def UniFam(inputfile, config, verbose=False):
     # common prefix for the output files
     prefix = config.get('UniFam','name')
-    if prefix.find(" ") != -1:
-	    prefix = re.sub(" ", "_", prefix)
-	    config.set('UniFam', 'name', prefix)
-    inputformat = config.get('UniFam','inputFormat')
+    # replace any non-alphanumeric character or underscore to underscore
+    prefix = re.sub(r'\W', r'_', prefix)
+    config.set('UniFam', 'name', prefix)
+
+    inputformat = config.get('UniFam','inputFormat') # get input format, contigs or proteins
     workdir = config.get('UniFam','workDir') + '/'
     outputAnnot = workdir + prefix + ".annot" # flat file with annotation for each protein
     outputfaa = workdir + prefix + '_annot.faa' # faa with annotation at the header lines
+    readme = open(workdir+'README','w') # README file that describes output files
+
     # if working directory does not exist, create the directory
     if not os.path.exists(workdir):
         os.makedirs(workdir)
+    readme.write("Working directory is {}.\n".format(workdir))
     
     # starts with contigs, instead of proteins
     if inputformat == "contigs":
@@ -924,44 +931,52 @@ def UniFam(inputfile, config):
         inputfaa = config.get('prodigal','faa')
         if doProdigal:
             prodigal_Cmd = prodigalCmdPrefix + ' -i ' + inputfile
-            sys.stdout.write("===== >> {} \n ".format(str(datetime.now()))) # print current time
+            sys.stdout.write("===== >> {} \n".format(str(datetime.now()))) # print current time
             sys.stdout.write('[prodigal] >> Predicting genes using prodigal ... \n')
+            if(verbose):
+                sys.stdout.write("prodigal command: {}\n".format(prodigal_Cmd))
             prodigal_proc = Popen(prodigal_Cmd, shell = True, stdout=None, stderr=None)
             prodigal_status = prodigal_proc.wait()
             if prodigal_status != 0:
                 sys.stderr.write('{} failed \n'.format(prodigal_Cmd))
             else:
                 sys.stdout.write('[prodigal] >> prodigal gene calling finished. \n')
-            sys.stdout.write("===== >> {} \n\n ".format(str(datetime.now()))) # print current time
+                readme.write("Prodigal predicted proteins are in file {}.\n".format(os.path.basename(config.get('prodigal', 'faa'))))
+                readme.write("Prodigal output in gbk format is {}.\n".format(os.path.basename(config.get('prodigal', 'out'))))
+            sys.stdout.write("===== >> {} \n\n".format(str(datetime.now()))) # print current time
         else:
             sys.stdout.write('>> prodigal skipped. \n\n')
 
 
         # run rnammer, put the output file in the config file
-        RNAmmer_CmdPrefix = run_RNAmmer(config)
         doRNAmmer = config.getboolean('UniFam','doRNAmmer')
         if doRNAmmer:
+            RNAmmer_CmdPrefix = run_RNAmmer(config)
             RNAmmer_Cmd = RNAmmer_CmdPrefix + inputfile
-            sys.stdout.write("===== >> {} \n ".format(str(datetime.now()))) # print current time
+            sys.stdout.write("===== >> {} \n".format(str(datetime.now()))) # print current time
             sys.stdout.write('[RNAmmer] >> predicting rRNA with RNAmmer ... \n')
+            if(verbose):
+                sys.stdout.write("RNAmmer command: {}\n".format(RNAmmer_Cmd))
             RNAmmer_proc = Popen(RNAmmer_Cmd, shell = True, stdout=None, stderr=None)
             RNAmmer_status = RNAmmer_proc.wait()
             if RNAmmer_status != 0:
                 sys.stderr.write('{} failed \n'.format(RNAmmer_Cmd))
             else:
                 sys.stdout.write('[RNAmmer] >> rRNA prediction finished. \n')
-
-            sys.stdout.write("===== >> {} \n\n ".format(str(datetime.now()))) # print current time
+                readme.write("RNAmmer output in gff format is {}.\n".format(os.path.basename(config.get('RNAmmer', 'rRNAoutput'))))
+            sys.stdout.write("===== >> {} \n\n".format(str(datetime.now()))) # print current time
         else:
             sys.stdout.write('>> RNAmmer skipped. \n\n')
 
         # run tRNA-scan, put the output file in the config file
-        tRNAscan_CmdPrefix = run_tRNAscan(config)
         dotRNAscan = config.getboolean('UniFam','dotRNAscan')
         if dotRNAscan:
+            tRNAscan_CmdPrefix = run_tRNAscan(config)
             tRNAscan_Cmd = tRNAscan_CmdPrefix + inputfile
+            sys.stdout.write("===== >> {} \n".format(str(datetime.now()))) # print current time
             sys.stdout.write('[tRNAscan] >> predicting tRNA with tRNAscan ... \n')
-            sys.stdout.write("===== >> {} \n ".format(str(datetime.now()))) # print current time
+            if(verbose):
+                sys.stdout.write("tRNAscan command: {}\n".format(tRNAscan_Cmd))
             tRNAscan_proc = Popen(tRNAscan_Cmd, shell = True, stdout=None, stderr=None)
             tRNAscan_status = tRNAscan_proc.wait()
             
@@ -969,8 +984,9 @@ def UniFam(inputfile, config):
                 sys.stderr.write('{} failed \n'.format(tRNAscan_Cmd))
             else:
                 sys.stdout.write('[tRNAscan] >> tRNA prediction finished. \n')
+                readme.write("tRNAscan output is {}.\n".format(os.path.basename(config.get('tRNAscan', 'tRNAoutput'))))
 
-            sys.stdout.write("===== >> {} \n\n ".format(str(datetime.now()))) # print current time
+            sys.stdout.write("===== >> {} \n\n".format(str(datetime.now()))) # print current time
         else:
             sys.stdout.write('>> tRNAscan skipped. \n\n')
         # parse the result
@@ -983,9 +999,10 @@ def UniFam(inputfile, config):
     doHMM = config.getboolean('UniFam','dohmmsearch')
     if doHMM:
         hmmsearchCmd = hmmsearchCmdPrefix + ' ' + inputfaa # hmmsearch system command
-	sys.stdout.write("hmmsearch command: {}\n".format(hmmsearchCmd))
-        sys.stdout.write("===== >> {} \n ".format(str(datetime.now()))) # print current time
+        sys.stdout.write("===== >> {} \n".format(str(datetime.now()))) # print current time
         sys.stdout.write('[hmmsearch] >> hmmsearch ... \n')
+        if(verbose):
+            sys.stdout.write("hmmsearch command: {}\n".format(hmmsearchCmd))
         hmm_proc = Popen(hmmsearchCmd, shell = True, stdout=None, stderr=None)
         hmm_status = hmm_proc.wait()
         
@@ -993,7 +1010,7 @@ def UniFam(inputfile, config):
             sys.stderr.write('{} failed \n'.format(hmmsearchCmd))
         else:
             sys.stdout.write('[hmmsearch] >> hmmsearch finished. \n')
-        sys.stdout.write("===== >> {} \n\n ".format(str(datetime.now()))) # print current time
+        sys.stdout.write("===== >> {} \n\n".format(str(datetime.now()))) # print current time
     else:
         sys.stdout.write('>> hmmsearch skipped. \n\n')
 
@@ -1005,11 +1022,12 @@ def UniFam(inputfile, config):
     # parse the domtab file
     group_file = workdir + prefix + '.group'
     if doParse:
-        sys.stdout.write("===== >> {} \n ".format(str(datetime.now()))) # print current time
+        sys.stdout.write("===== >> {} \n".format(str(datetime.now()))) # print current time
         sys.stdout.write('[UniFam] >> parsing hmmsearch results for best profile... \n')
         parse_domtabfile(domtb, group_file,seq_coverage=config.getfloat('UniFam','seqCoverage'), hmm_coverage=config.getfloat('UniFam','hmmCoverage'))
         sys.stdout.write('[UniFam] >> Annotating proteins... \n')
-        sys.stdout.write("===== >> {} \n\n ".format(str(datetime.now()))) # print current time
+        sys.stdout.write("===== >> {} \n\n".format(str(datetime.now()))) # print current time
+        readme.write("hmmsearch result with proteinName, groupName, E-value is {}.\n".format(os.path.basename(group_file)))
     else:
         sys.stdout.write('>> Parsing skipped. \n\n')
 
@@ -1018,18 +1036,18 @@ def UniFam(inputfile, config):
     annot = read_annot(annotFile)
 
     # output file (Annotation file in flat tab delimited format) in the working directory
-    annot_proteins(group_file, annot, outputAnnot, eval=config.getfloat('hmmsearch','eval'))
+    annot_proteins(group_file, annot, outputAnnot, Eval=config.getfloat('hmmsearch','eval'))
     annot_header(outputAnnot,inputfaa,outputfaa) # integrate annotation to the output fasta file
+    readme.write("Protein annotations as a flat file is {}.\n".format(os.path.basename(outputAnnot)))
+    readme.write("Fasta file of proteins with annotations in their header lines is {}.\n".format(os.path.basename(outputfaa)))
 
     doPwy = config.getboolean('UniFam','doPathway')
-
-
     if doPwy:
         # If the input is not contigs, then the genomic sequence is missing, print warning message.
         if inputformat!="contigs":
             sys.stderr.write('** warning: {}\n'.format('Input format is not "contigs", find pathways using provided proteins'))
         
-        sys.stdout.write("===== >> {} \n ".format(str(datetime.now()))) # print current time
+        sys.stdout.write("===== >> {} \n".format(str(datetime.now()))) # print current time
         sys.stdout.write('[UniFam] >> preparing files for pathway reconstruction... \n')
         write_org_param(config)
         if inputformat == "contigs":
@@ -1037,15 +1055,29 @@ def UniFam(inputfile, config):
         else:
             genetic_element_gbk(config, outputAnnot)
         pwyCmd = PathoLogicCmd(config)
-        sys.stdout.write('[UniFam] >> Reconstructing pathways... \n\n')
+        sys.stdout.write('[Pathologic] >> Reconstructing pathways... \n')
         pwy_proc =Popen(pwyCmd, shell = True, stdout=None, stderr=None)
         pwy_status = pwy_proc.wait()
         if pwy_status != 0:
             sys.stderr.write('{} failed \n'.format(pwyCmd))
         else:
-            sys.stdout.write('[UniFam] >> Pathway reconstruction finished. \n')
-        sys.stdout.write("===== >> {} \n\n ".format(str(datetime.now()))) # print current time
+            sys.stdout.write('[Pathologic] >> Pathway reconstruction finished. \n')
+        sys.stdout.write("===== >> {} \n\n".format(str(datetime.now()))) # print current time
+
         ## move the pathway inference results to the working directory
         dbName = config.get('PathoLogic','dbName')
         pwyLocalDir = config.get('PathoLogic','PathwayLocalDir')
         shutil.move(pwyLocalDir+dbName,workdir+dbName)
+        ## compress result with zip for user download
+        dbzip = workdir+dbName+".zip"
+        compressCmd = "zip -r " + dbzip + " workdir+dbName"
+        zip_proc = Popen(compressCmd, shell = True, stdout=None, stderr=None)
+        zip_status = zip_proc.wait()
+        if zip_status != 0:
+            sys.stderr.write('{} failed \n'.format(compressCmd))
+        else:
+            sys.stdout.write('[UniFam] >> Pathway results compressed. \n')
+            readme.write("Pathway inference result is in {}.\n".format(os.path.basename(dbzip)))
+        sys.stdout.write("===== >> {} \n\n".format(str(datetime.now()))) # print current time
+
+    readme.close()
