@@ -921,7 +921,7 @@ def UniFam(inputfile, config, verbose=False):
     # if working directory does not exist, create the directory
     if not os.path.exists(workdir):
         os.makedirs(workdir)
-    readme.write("Working directory is {}.\n".format(workdir))
+    readme.write("Working directory is {}\n".format(workdir))
     
     # starts with contigs, instead of proteins
     if inputformat == "contigs":
@@ -941,8 +941,8 @@ def UniFam(inputfile, config, verbose=False):
                 sys.stderr.write('{} failed \n'.format(prodigal_Cmd))
             else:
                 sys.stdout.write('[prodigal] >> prodigal gene calling finished. \n')
-                readme.write("Prodigal predicted proteins are in file {}.\n".format(os.path.basename(config.get('prodigal', 'faa'))))
-                readme.write("Prodigal output in gbk format is {}.\n".format(os.path.basename(config.get('prodigal', 'prodout'))))
+                readme.write("Prodigal predicted proteins are in file {}\n".format(os.path.basename(config.get('prodigal', 'faa'))))
+                readme.write("Prodigal output in gbk format is {}\n".format(os.path.basename(config.get('prodigal', 'prodout'))))
             sys.stdout.write("===== >> {} \n\n".format(str(datetime.now()))) # print current time
         else:
             sys.stdout.write('>> prodigal skipped. \n\n')
@@ -963,7 +963,7 @@ def UniFam(inputfile, config, verbose=False):
                 sys.stderr.write('{} failed \n'.format(RNAmmer_Cmd))
             else:
                 sys.stdout.write('[RNAmmer] >> rRNA prediction finished. \n')
-                readme.write("RNAmmer output in gff format is {}.\n".format(os.path.basename(config.get('RNAmmer', 'rRNAoutput'))))
+                readme.write("RNAmmer output in gff format is {}\n".format(os.path.basename(config.get('RNAmmer', 'rRNAoutput'))))
             sys.stdout.write("===== >> {} \n\n".format(str(datetime.now()))) # print current time
         else:
             sys.stdout.write('>> RNAmmer skipped. \n\n')
@@ -984,7 +984,7 @@ def UniFam(inputfile, config, verbose=False):
                 sys.stderr.write('{} failed \n'.format(tRNAscan_Cmd))
             else:
                 sys.stdout.write('[tRNAscan] >> tRNA prediction finished. \n')
-                readme.write("tRNAscan output is {}.\n".format(os.path.basename(config.get('tRNAscan', 'tRNAoutput'))))
+                readme.write("tRNAscan output is {}\n".format(os.path.basename(config.get('tRNAscan', 'tRNAoutput'))))
 
             sys.stdout.write("===== >> {} \n\n".format(str(datetime.now()))) # print current time
         else:
@@ -1027,7 +1027,7 @@ def UniFam(inputfile, config, verbose=False):
         parse_domtabfile(domtb, group_file,seq_coverage=config.getfloat('UniFam','seqCoverage'), hmm_coverage=config.getfloat('UniFam','hmmCoverage'))
         sys.stdout.write('[UniFam] >> Annotating proteins... \n')
         sys.stdout.write("===== >> {} \n\n".format(str(datetime.now()))) # print current time
-        readme.write("hmmsearch result with proteinName, groupName, E-value is {}.\n".format(os.path.basename(group_file)))
+        readme.write("hmmsearch result with proteinName, groupName, E-value is {}\n".format(os.path.basename(group_file)))
     else:
         sys.stdout.write('>> Parsing skipped. \n\n')
 
@@ -1038,8 +1038,8 @@ def UniFam(inputfile, config, verbose=False):
     # output file (Annotation file in flat tab delimited format) in the working directory
     annot_proteins(group_file, annot, outputAnnot, Eval=config.getfloat('hmmsearch','eval'))
     annot_header(outputAnnot,inputfaa,outputfaa) # integrate annotation to the output fasta file
-    readme.write("Protein annotations as a flat file is {}.\n".format(os.path.basename(outputAnnot)))
-    readme.write("Fasta file of proteins with annotations in their header lines is {}.\n".format(os.path.basename(outputfaa)))
+    readme.write("Protein annotations as a flat file is {}\n".format(os.path.basename(outputAnnot)))
+    readme.write("Fasta file of proteins with annotations in their header lines is {}\n".format(os.path.basename(outputfaa)))
 
     doPwy = config.getboolean('UniFam','doPathway')
     if doPwy:
@@ -1077,7 +1077,7 @@ def UniFam(inputfile, config, verbose=False):
             sys.stderr.write('{} failed \n'.format(compressCmd))
         else:
             sys.stdout.write('[UniFam] >> Pathway results compressed. \n')
-            readme.write("Pathway inference result is in {}.\n".format(os.path.basename(dbzip)))
+            readme.write("Pathway inference result is in {}\n".format(os.path.basename(dbzip)))
         sys.stdout.write("===== >> {} \n\n".format(str(datetime.now()))) # print current time
 
     readme.close()
