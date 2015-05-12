@@ -24,10 +24,10 @@ Envirionment Requirement
 
 Package contents
 ------------------------
-	1. *data*: UniFam databases, including the database in a whole, and two sub-databases, one for prokaryotic proteins and one for eukaryotic proteins specifically. 
+	1. **data**: UniFam databases, including the database in a whole, and two sub-databases, one for prokaryotic proteins and one for eukaryotic proteins specifically. 
 	The annotation files for the three databases and their aliases are also included. [Download](http://unifam.omicsbio.org/downloads).
-	2. *example*: a test example with input and output
-	3. *src*: python scripts for the pipeline
+	2. **example**: a test example with input and output
+	3. **src**: python scripts for the pipeline
 
 Instructions
 ------------------------
@@ -40,7 +40,10 @@ Instructions
 	If a particular module is needed, go to the corresponding section in the configuration file and configure the path to its executable, and parameters.
 
 	3. Run the main script in the src directory.
-	`python UniFam.py -c configFile -i inputfile`
+	```
+	#!bash
+	python UniFam.py -c configFile -i inputfile
+	```
 	configFile is as described in step 2;
 	inputfile should be in fasta format, either of genome sequence (DNA), or proteins in a genome;
 	outputfile is the output annotation file for the provided genome (proteins)
