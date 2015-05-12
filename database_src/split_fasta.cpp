@@ -6,7 +6,7 @@
 #include "pfclust.hpp"
 
 /********************************************************
- * split_fasta_mpi.cpp
+ * split_fasta.cpp
  
  * Split big fasta file into small chunks, preparation for running.
  * MPI version so that big data can be separated into many chunks.
@@ -15,9 +15,13 @@
  * on the minimum sequence length in the big chunk. The information for each 
  * smaller chunk and the groups contained in it is written in the *.chunk 
  * and *.group files.
+ *
+ * This version generate fastas with sequences strictly from the groups, 
+ * and does not consider the groups that these sequences can hit when hmmsearch
+ * is used to find their new group again. For this purpose, use split_fasta_hmmsearch.cpp
  
- * Created by JJ Chai  on 11/15/2013. Last modified 05/12/2015.
- * Copyright (c) 2013 JJ Chai (ORNL). Allrights reserved.
+ * Created by JJ Crosskey  on 05/12/2015. Last modified 05/12/2015.
+ * Copyright (c) 2015 JJ Crosskey (ORNL). Allrights reserved.
  
  ********************************************************/
 
@@ -159,7 +163,7 @@ void MasterProcess(const int & num_big_chunks, const int & threads)
 }
 
 // slave job
-void SlaveProcess(const map< string, string > & seqMap, const map<int, vector<string> > & lenMap,
+void SlaveProcess(const map< string, string > & seqMap, 
                   const map<int, vector<string> > & groupMap, const vector<int> & groupNames,
                   const int & gp_num, const int & num_groups, const int & threads, const int & num_big_chunks,
                   const string & outputDir)
@@ -188,7 +192,7 @@ void SlaveProcess(const map< string, string > & seqMap, const map<int, vector<st
         #pragma omp parallel for
         for (int j = currentWorkID * threads; j < chunk_end; j++) {
             
-            int i, gp_start, gp_end, max_len, min_len, up_len, low_len, gp, chunks, chunk_group, len;
+            int i, gp_start, gp_end, min_len, gp, chunks, chunk_group, len;
             vector<string> seqs;
             vector<string>::const_iterator it;
             
@@ -208,41 +212,26 @@ void SlaveProcess(const map< string, string > & seqMap, const map<int, vector<st
             else{
                 /* find the maximum length and upper bound for this node */
                 min_len = 5000;
-                max_len = 0;
                 for (i = gp_start; i <= gp_end; i++) {
                     seqs = groupMap.at(groupNames.at(i));
                     for (it = seqs.begin(); it != seqs.end(); it++)
                     {
                         len = (int) seqMap.at(*it).length();
                         min_len = (len < min_len) ? len : min_len;
-                        max_len = (len > max_len) ? len : max_len;
                     }
                     
                 }
-		/* this is for the hmmsearch, building the HMMs is not this complicated */
-                up_len = (ceil((double)max_len/0.8)> 5000) ? 5000 : ceil((double)max_len/0.8);
-                low_len = (floor((double)min_len*0.8) > 30) ? floor((double)min_len*0.8) : 30;
-                cout << "   big chunk " << j << " -> min_len: " << min_len << " max_len: " << max_len \
-                << " number of groups: " << gp_end - gp_start + 1 << endl;
                 
-                map<int, vector<string> >::const_iterator itlow, itup, len_it;
-                itlow = lenMap.lower_bound(low_len);
-                itup = lenMap.upper_bound(up_len);
-                
-                ofstream myfasta(fastafilename.c_str());
-                for (len_it = itlow; len_it != itup; len_it++) {
-                    for( it = (len_it->second).begin(); it != (len_it->second).end(); it++)
-                        myfasta << ">" << *it << endl << seqMap.at(*it) << endl;
-                }
-                myfasta.close();
-                
-                ofstream mygroup(groupfilename.c_str());
+                ofstream myfasta(fastafilename.c_str()); /* fasta file with all sequences in this big chunk */
+                ofstream mygroup(groupfilename.c_str()); /* group file with "seq group" format for all the sequences */
                 for (gp = gp_start; gp <= gp_end; gp++) {
                     for (it = (groupMap.at(groupNames.at(gp))).begin(); it !=  (groupMap.at(groupNames.at(gp))).end(); it++) {
                         mygroup << *it << " " << groupNames.at(gp) << endl;
+                        myfasta << ">" << *it << endl << seqMap.at(*it) << endl;
                     }
                 }
                 mygroup.close();
+                myfasta.close();
             }
             
             /*************************** write chunk.info *****************************/
@@ -264,13 +253,14 @@ void SlaveProcess(const map< string, string > & seqMap, const map<int, vector<st
                         }
                     }
                     
-                    cout << "   " << j << " -> chunks = " << chunks << endl;
+                    cout << "   big chunk " << j << " -> small chunks = " << chunks << endl;
                     for (i = 0; i < chunks; i++) {
                         mychunk << j << " " << i*chunk_group << " " << min(gps-1, (i+1)*chunk_group - 1) << endl;
                     }
                 }
                 // if shortest sequence is shorter than 60
                 else{
+                    cout << "   big chunk " << j << " -> small chunks = 1" << endl;
                     mychunk << j << " " << 0 << " " << (gp_end-gp_start) << endl;
                 }
                 
@@ -294,7 +284,7 @@ int main(int argc, char ** argv){
     string fastafile, groupfile, outputDir;
     int num_big_chunks, num_groups, gp_num, threads;
     map< string, string > seqMap;
-    map<int, vector<string> > lenMap, groupMap;
+    map<int, vector<string> > groupMap;
     vector<int> groupNames;
     
     /* initialize command line arguments */
@@ -302,7 +292,7 @@ int main(int argc, char ** argv){
     Utils::mkdirIfNonExist(outputDir);
     
     int myid;
-    double start_time, finish_time, elapsed_time;
+    double start_time, finish_time;
     
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD,&myid);
@@ -320,7 +310,7 @@ int main(int argc, char ** argv){
     /********************** do stuff *********************/
     
     /* Read the sequences and groups into memory */
-    PfClust::read_fasta(fastafile, seqMap, lenMap);
+    PfClust::read_fastaseq(fastafile, seqMap);
     PfClust::read_group(groupfile, groupMap, groupNames);
     
     num_groups = (int) groupMap.size(); // total number of groups
@@ -351,7 +341,7 @@ int main(int argc, char ** argv){
     
     else
     {
-        SlaveProcess(seqMap, lenMap, groupMap, groupNames, gp_num, num_groups, threads, num_big_chunks, outputDir);
+        SlaveProcess(seqMap, groupMap, groupNames, gp_num, num_groups, threads, num_big_chunks, outputDir);
     }
     
     if( myid == 0 )
