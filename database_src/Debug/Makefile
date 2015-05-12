@@ -52,15 +52,15 @@ pipe: pipeline
 
 all: $(SPLIT) $(PIPE)
 	@echo Done
-$(SPLIT): $(OBJS) split_fasta_hybrid.o
-	$(MPICC) $(OMPFLAG) $(LFLAGS) $(CFLAGS) $(INCLUDES) -o $(SPLIT) $(OBJS) $(LIBS) split_fasta_hybrid.o
+$(SPLIT): $(OBJS) split_fasta.o
+	$(MPICC) $(OMPFLAG) $(LFLAGS) $(CFLAGS) $(INCLUDES) -o $(SPLIT) $(OBJS) $(LIBS) split_fasta.o
 	@echo $(SPLIT) compiled
 
 $(PIPE): $(OBJS) till_hmmbuild.o
 	$(MPICC) $(OMPFLAG) $(LFLAGS) $(CFLAGS) $(INCLUDES) -o $(PIPE) $(OBJS) $(LIBS) till_hmmbuild.o
 	@echo $(PIPE) compiled
 
-split_fasta_hybrid.o: split_fasta_hybrid.cpp
+split_fasta.o: split_fasta.cpp
 	$(MPICC) $(OMPFLAG) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 till_hmmbuild.o: till_hmmbuild.cpp

@@ -10,10 +10,13 @@
  
  * Split big fasta file into small chunks, preparation for running.
  * MPI version so that big data can be separated into many chunks.
- * every big chunk will be further separated into smaller chunks depending
- * on the minimum sequence length in the big chunk.
+ * 
+ * Every big chunk will be further separated into smaller chunks depending
+ * on the minimum sequence length in the big chunk. The information for each 
+ * smaller chunk and the groups contained in it is written in the *.chunk 
+ * and *.group files.
  
- * Created by JJ Chai  on 11/15/2013. Last modified 11/15/2013.
+ * Created by JJ Chai  on 11/15/2013. Last modified 05/12/2015.
  * Copyright (c) 2013 JJ Chai (ORNL). Allrights reserved.
  
  ********************************************************/
@@ -173,13 +176,15 @@ void SlaveProcess(const map< string, string > & seqMap, const map<int, vector<st
         if (status.MPI_TAG == DIETAG) {
             break;
         }
+	/* Each thread works on a big chunk, therefore each process works on multiple big chunks */
         int chunk_start = currentWorkID * threads;
         int chunk_end = min( (currentWorkID+1)*threads, num_big_chunks);
         
-        cout << "   " << myid << ": working on chunks " << chunk_start << " to " << chunk_end << endl;
-	int nProc = omp_get_max_threads();
-        omp_set_num_threads(threads);
+        cout << "   Process " << myid << ": working on chunks " << chunk_start << " to " << chunk_end << endl;
+	int nProc = omp_get_max_threads();      /* maximum threads possible */
+        omp_set_num_threads(threads > nProc ? nProc : threads); /* make sure thread count is within limit */
         
+	/* Work on the big chunk with multiple threads */
         #pragma omp parallel for
         for (int j = currentWorkID * threads; j < chunk_end; j++) {
             
@@ -198,7 +203,7 @@ void SlaveProcess(const map< string, string > & seqMap, const map<int, vector<st
             string groupfilename = gp_file_base + ".group";
             
             if (Utils::isFileExist(fastafilename) && Utils::isFileExist(groupfilename) ) {
-                cout << "   " << j << " already done" << endl;
+                cout << "   big chunk " << j << " already done" << endl;
             }
             else{
                 /* find the maximum length and upper bound for this node */
@@ -214,9 +219,10 @@ void SlaveProcess(const map< string, string > & seqMap, const map<int, vector<st
                     }
                     
                 }
+		/* this is for the hmmsearch, building the HMMs is not this complicated */
                 up_len = (ceil((double)max_len/0.8)> 5000) ? 5000 : ceil((double)max_len/0.8);
                 low_len = (floor((double)min_len*0.8) > 30) ? floor((double)min_len*0.8) : 30;
-                cout << "   " << j << " -> min_len: " << min_len << " max_len: " << max_len \
+                cout << "   big chunk " << j << " -> min_len: " << min_len << " max_len: " << max_len \
                 << " number of groups: " << gp_end - gp_start + 1 << endl;
                 
                 map<int, vector<string> >::const_iterator itlow, itup, len_it;
@@ -308,11 +314,12 @@ int main(int argc, char ** argv){
         << "============================================================================"
         << endl << Utils::currentDateTime() << endl
         << " Beginning split_fasta" << endl
-        << " [Step 1] Prepare splitting: Running -> " << std::flush;
+        << " [Step 1] Prepare splitting: Running -> " << endl << std::flush;
     }
     
     /********************** do stuff *********************/
     
+    /* Read the sequences and groups into memory */
     PfClust::read_fasta(fastafile, seqMap, lenMap);
     PfClust::read_group(groupfile, groupMap, groupNames);
     
