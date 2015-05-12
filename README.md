@@ -1,10 +1,11 @@
 UniFam
 ======
-**Protein annotation with UniProt-based Families**
+**Full sequence protein annotation with UniProt-based Families**
 
 UniFam includes a database of protein families generated based on UniProt, and provides a pipeline to annotate either a genome or a set of proteins. 
 UniFam also provides users an option to run other bioinformatics tools to extract genomic information and reconstruct metabolic pathways.
 Go to http://unifam.omicsbio.org to submit your annotation jobs with Unifam!
+See our [paper](http://www.biomedcentral.com/1471-2148/14/207) in BMC Evolutionary Biology for a phylogenomic study of prokaryotes based on UniFam annotation, and comparison benchmark with other protein annotation programs. 
 
 Envirionment Requirement
 ------------------------
@@ -16,7 +17,7 @@ Envirionment Requirement
 
 **Optional**:
 
-	1. Prodigal v2.60 for prokaryotic gene calling
+	1. Prodigal v3.0 for prokaryotic gene calling
 	2. RNAmmer for predicting RNAs
 	3. tRNAscan for predicting tRNAs
 	4. Pathway-Tools for pathway reconstruction
