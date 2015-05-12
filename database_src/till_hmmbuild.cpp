@@ -20,20 +20,19 @@
 using namespace std;
 // slave process, everybody is slave...
 void SlaveProcess(const string & inputDir, const string & tmpDir, const string & outputDir,
-                  const string & mafft_cmd_path, const string & hmmbuild_cmd_path, const string & hmmsearch_cmd_path);
+                  const string & mafft_cmd_path, const string & hmmbuild_cmd_path);
 void MasterProcess(const vector<vector<int> > & chunk_info);
 /* print usage */
 void usage()
 {
     cout << " [Usage]" << endl
     << "  pipeline [options] -in <inputDir> -td <tmpDir> -gd <outputDir> " << endl
-    << "  -align <mafft_cmd_path> -build <hmmbuild_cmd_path> -search <hmmsearch_cmd_path>" << endl
+    << "  -align <mafft_cmd_path> -build <hmmbuild_cmd_path>" << endl
     << endl
     << " [Inputs]" << endl
     << "   -in <inputDir> directory that includes all input files" << endl
     << "   -align <mafft_cmd_path> full path for the alignment command (mafft)" << endl
     << "   -build <hmmbuild_cmd_path> full path for hmmbuild" << endl
-    << "   -search <hmmsearch_cmd_path> full path for hmmsearch" << endl
     << endl
     << " [Outputs]" << endl
     << "   -td <tmpDir> directory for temporary intermediate files" << endl
@@ -54,8 +53,7 @@ void initializeArguments(int argc, char **argv,
                          string & tmpDir, // temporary output directory
                          string & outputDir, // output directory for the group files
                          string & mafft_cmd_path,//
-                         string & hmmbuild_cmd_path, //
-                         string & hmmsearch_cmd_path
+                         string & hmmbuild_cmd_path
 )
 {
     vector<string> Arguments;
@@ -65,7 +63,6 @@ void initializeArguments(int argc, char **argv,
     outputDir = "";
     mafft_cmd_path = "";
     hmmbuild_cmd_path = "";
-    hmmsearch_cmd_path = "";
     
     while(argc--)
         Arguments.push_back(*argv++);
@@ -93,10 +90,6 @@ void initializeArguments(int argc, char **argv,
         else if (Arguments[i] == "-build")
             hmmbuild_cmd_path = Arguments[++i];
         
-        // hmmsearch
-        else if (Arguments[i] == "-search")
-            hmmsearch_cmd_path = Arguments[++i];
-        
         // help, print Usage
         else if ((Arguments[i] == "-h") || (Arguments[i] == "--help"))
         {
@@ -112,7 +105,7 @@ void initializeArguments(int argc, char **argv,
     }
     // check required arguments
     if ((inputDir == "") || (tmpDir == "") || (outputDir == "") || (mafft_cmd_path == "")
-        || (hmmbuild_cmd_path == "")|| (hmmsearch_cmd_path == ""))
+        || (hmmbuild_cmd_path == ""))
     {
         cerr << "miss necessary parameter(s)"<<endl;
         cerr << "use -h/--help for help" << endl;
@@ -130,12 +123,12 @@ int main(int argc, char ** argv){
     
     string fastafile; //input files
     string groupfile;
-    string mafft_cmd_path, hmmbuild_cmd_path, hmmsearch_cmd_path;
+    string mafft_cmd_path, hmmbuild_cmd_path;
     string inputDir, tmpDir, outputDir;
 
     
-    int myid, num_groups, num_nodes;
-    double start_time, finish_time, elapsed_time;
+    int myid, num_nodes;
+    double start_time, finish_time;
     
     /********************** initialize MPI  *********************/
     
@@ -156,7 +149,7 @@ int main(int argc, char ** argv){
     
     /************ initialize arguments, for input, output, and options ***********/
     
-    initializeArguments(argc, argv, inputDir, tmpDir,outputDir, mafft_cmd_path, hmmbuild_cmd_path, hmmsearch_cmd_path);
+    initializeArguments(argc, argv, inputDir, tmpDir,outputDir, mafft_cmd_path, hmmbuild_cmd_path);
     
     Utils::mkdirIfNonExist(tmpDir);
     
@@ -168,8 +161,7 @@ int main(int argc, char ** argv){
             << "   Temporary output directory is : " << tmpDir << endl
             << "   Output directory is : " << outputDir << endl
             << "   Full path for the MSA command is : " << mafft_cmd_path << endl
-            << "   Full path for hmmbuild command is : " << hmmbuild_cmd_path << endl
-            << "   Full path for hmmsearch command is : " << hmmsearch_cmd_path << endl << flush;
+            << "   Full path for hmmbuild command is : " << hmmbuild_cmd_path << endl << flush;
         cout<< " [Step 1] Done!" << endl << endl
             << " [Step 2] Get the information on small chunks -> " << endl;
     }
@@ -205,7 +197,7 @@ int main(int argc, char ** argv){
     }
     
     else
-        SlaveProcess(inputDir, tmpDir, outputDir, mafft_cmd_path, hmmbuild_cmd_path, hmmsearch_cmd_path);
+        SlaveProcess(inputDir, tmpDir, outputDir, mafft_cmd_path, hmmbuild_cmd_path);
     
     /********************** display work end and time record *********************/
     
@@ -285,7 +277,7 @@ void MasterProcess(const vector<vector<int> > & chunk_info)
 
 
 void SlaveProcess(const string & inputDir, const string & tmpDir, const string &outputDir,
-                  const string & mafft_cmd_path, const string & hmmbuild_cmd_path, const string & hmmsearch_cmd_path)
+                  const string & mafft_cmd_path, const string & hmmbuild_cmd_path)
 {
     MPI_Status status;
     int myid;
