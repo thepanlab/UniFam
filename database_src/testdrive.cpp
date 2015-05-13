@@ -28,13 +28,13 @@ int main(int argc, char ** argv){
 		<< "============================================================================" << std::endl
 		<< Utils::currentDateTime()
 		<< endl
-		<< " Beginning  -> " << endl;
+		<< "Beginning  -> " << endl;
 
 	/********************** variable declaration *********************/
 
 	string groupfile = argv[1];
 	unordered_map<string, UINT16> seq_gp; 
-	map<UINT16, UINT16> group_len_map;
+	map<UINT16, vector<UINT16> > group_len_map;
 
 	/********************** test run of function *********************/
 

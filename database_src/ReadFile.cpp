@@ -28,7 +28,7 @@ using namespace std;
  * =====================================================================================
  */
 
-void read_group_sg(const string & file_name, unordered_map<string, UINT16> & seq_gp, map<UINT16, UINT16> & group_len_map){
+void read_group_sg(const string & file_name, unordered_map<string, UINT16> & seq_gp, map<UINT16, vector<UINT16> > & group_len_map){
 	ifstream ingroup(file_name.c_str());
 	if(!ingroup)
 	{
@@ -36,22 +36,23 @@ void read_group_sg(const string & file_name, unordered_map<string, UINT16> & seq
 		exit(1);
 	}
 	string seqID, field;
-	UINT16 groupID, seq_len, group_len;
+	UINT16 groupID, group_len, num_groups;
 	seq_gp.clear();
 	seq_gp.reserve(10000000);
 
+	num_groups = 0;
 	while(ingroup >> seqID)
 	{
 		ingroup >> groupID >> field;
 		if(field.back() == '*'){        /* centroid sequence of the group */
 			field.pop_back();
 			group_len = stoul(field);
-			seq_len = group_len;
-			group_len_map[groupID] = group_len;
+			group_len_map[groupID].push_back(group_len);
+			group_len_map[groupID].push_back(num_groups);
+			num_groups++;
+
 		}
-		else
-			seq_len = stoul(field);
-		seq_gp[seqID] = seq_len;
+		seq_gp[seqID] = groupID;
 	}
 	cout << "Total number of groups: " << group_len_map.size() << endl;
 	cout << "Total number of sequences: " << seq_gp.size() << endl;

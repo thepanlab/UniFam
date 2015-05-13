@@ -25,6 +25,6 @@ typedef unsigned int UINT16;
 using namespace std;
 
 /* Read group file (seqID groupID seqLen) and save information */
-void read_group_sg(const string & file_name, unordered_map<string, UINT16> & seq_gp, map<UINT16, UINT16> & group_len_map);
+void read_group_sg(const string & file_name, unordered_map<string, UINT16> & seq_gp, map<UINT16, vector<UINT16> > & group_len_map);
 
 #endif //READFILE.HPP
