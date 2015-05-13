@@ -33,7 +33,7 @@ OMPFLAG= -fopenmp
 vpath %.cpp ../
 vpath %.h ../
 #SRCS := $(wildcard ../*.cpp)
-SRCS := utils.cpp directoryStructure.cpp runBioProg.cpp pfclust.cpp
+SRCS := utils.cpp directoryStructure.cpp runBioProg.cpp pfclust.cpp ReadFile.cpp
 
 # use macro to get object files
 OBJS = $(SRCS:.cpp=.o)
@@ -41,6 +41,7 @@ OBJS = $(SRCS:.cpp=.o)
 # program names
 SPLIT = split_fasta
 PIPE = pipeline
+TEST = testdrive
 
 .PHONY: default split_fasta pipeline all clean
 
@@ -49,6 +50,8 @@ default: pipeline
 split: split_fasta
 
 pipe: pipeline
+
+test: testdrive
 
 all: $(SPLIT) $(PIPE)
 	@echo Done
@@ -60,12 +63,18 @@ $(PIPE): $(OBJS) till_hmmbuild.o
 	$(MPICC) $(OMPFLAG) $(LFLAGS) $(CFLAGS) $(INCLUDES) -o $(PIPE) $(OBJS) $(LIBS) till_hmmbuild.o
 	@echo $(PIPE) compiled
 
+$(TEST): $(OBJS) testdrive.o
+	$(MPICC) $(LFLAGS) $(CFLAGS) $(INCLUDES) -o $(TEST) $(OBJS) $(LIBS) testdrive.o
+	@echo $(TEST) compiled
+
 split_fasta.o: split_fasta.cpp
 	$(MPICC) $(OMPFLAG) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 till_hmmbuild.o: till_hmmbuild.cpp
 	$(MPICC) $(OMPFLAG) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
+testdrive.o: testdrive.cpp
+	$(MPICC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 # Either way will work, first one uses old-Fashioned suffix rules; second one uses static pattern rules
 #.cpp.o:
 $(OBJS): %.o:%.cpp
