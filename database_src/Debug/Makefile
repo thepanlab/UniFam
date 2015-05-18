@@ -33,44 +33,44 @@ OMPFLAG= -fopenmp
 vpath %.cpp ../
 vpath %.h ../
 #SRCS := $(wildcard ../*.cpp)
-SRCS := utils.cpp directoryStructure.cpp runBioProg.cpp pfclust.cpp ReadFile.cpp
+SRCS := utils.cpp directoryStructure.cpp ReadFile.cpp
 
 # use macro to get object files
 OBJS = $(SRCS:.cpp=.o)
 
 # program names
-SPLIT = split_fasta
-PIPE = pipeline
+SPLIT = split_group
+PIPE = unifam_build
 TEST = testdrive
 
-.PHONY: default split_fasta pipeline all clean
+.PHONY: default split_group unifam_build all clean
 
-default: pipeline
+default: unifam_build
 
-split: split_fasta
+split: split_group
 
-pipe: pipeline
+pipe: unifam_build
 
 test: testdrive
 
 all: $(SPLIT) $(PIPE)
 	@echo Done
-$(SPLIT): $(OBJS) split_fasta_serial.o
-	$(MPICC) $(OMPFLAG) $(LFLAGS) $(CFLAGS) $(INCLUDES) -o $(SPLIT) $(OBJS) $(LIBS) split_fasta_serial.o
+$(SPLIT): $(OBJS) split_group.o
+	$(MPICC) $(OMPFLAG) $(LFLAGS) $(CFLAGS) $(INCLUDES) -o $(SPLIT) $(OBJS) $(LIBS) split_group.o
 	@echo $(SPLIT) compiled
 
-$(PIPE): $(OBJS) till_hmmbuild.o
-	$(MPICC) $(OMPFLAG) $(LFLAGS) $(CFLAGS) $(INCLUDES) -o $(PIPE) $(OBJS) $(LIBS) till_hmmbuild.o
+$(PIPE): $(OBJS) unifam_build.o
+	$(MPICC) $(OMPFLAG) $(LFLAGS) $(CFLAGS) $(INCLUDES) -o $(PIPE) $(OBJS) $(LIBS) unifam_build.o
 	@echo $(PIPE) compiled
 
 $(TEST): $(OBJS) testdrive.o
 	$(MPICC) $(OMPFLAG) $(LFLAGS) $(CFLAGS) $(INCLUDES) -o $(TEST) $(OBJS) $(LIBS) testdrive.o
 	@echo $(TEST) compiled
 
-split_fasta_serial.o: split_fasta_serial.cpp
+split_group.o: split_group.cpp
 	$(MPICC) $(OMPFLAG) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
-till_hmmbuild.o: till_hmmbuild.cpp
+unifam_build.o: unifam_build.cpp
 	$(MPICC) $(OMPFLAG) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 testdrive.o: testdrive.cpp

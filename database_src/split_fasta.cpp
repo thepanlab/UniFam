@@ -282,7 +282,7 @@ int main(int argc, char ** argv){
     /********************** variable declaration *********************/
     
     string fastafile, groupfile, outputDir;
-    int num_big_chunks, num_groups, gp_num, threads;
+    int num_big_chunks, num_groups, gp_num, threads, num_nodes;
     map< string, string > seqMap;
     map<int, vector<string> > groupMap;
     vector<int> groupNames;
@@ -296,6 +296,7 @@ int main(int argc, char ** argv){
     
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD,&myid);
+    MPI_Comm_size(MPI_COMM_WORLD,&num_nodes);
     
     /********************** display work start and time record *********************/
     if (myid == 0) {
@@ -335,13 +336,19 @@ int main(int argc, char ** argv){
         cout << "   " << num_big_chunks << " big chunks" << endl << endl;
         cout << Utils::currentDateTime() <<  " Done!" << endl;
         cout << " [Step 2] write files for all big chunks: Running -> " << std::flush;
-        
-        MasterProcess(num_big_chunks, threads);
     }
+        
+    if(num_nodes > 1){
+	    if(myid == 0)
+		    MasterProcess(num_big_chunks, threads);
     
-    else
-    {
-        SlaveProcess(seqMap, groupMap, groupNames, gp_num, num_groups, threads, num_big_chunks, outputDir);
+	    else
+	    {
+		    SlaveProcess(seqMap, groupMap, groupNames, gp_num, num_groups, threads, num_big_chunks, outputDir);
+	    }
+    }
+    else{
+	    SlaveProcess()
     }
     
     if( myid == 0 )
