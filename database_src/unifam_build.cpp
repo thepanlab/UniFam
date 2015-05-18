@@ -138,6 +138,12 @@ void initializeArguments(int argc, char **argv,
 
 // main function
 
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  main
+ *  Description:  main function
+ * =====================================================================================
+ */
 int main(int argc, char ** argv){
     
     /********************** variable declaration *********************/

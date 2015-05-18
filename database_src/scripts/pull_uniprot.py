@@ -61,7 +61,6 @@ def pull_uniprot(inputfile, outputfile, cutoff):
         The input group file is sorted by sequence IDs, therefore the swissport sequences (sp|...)
         show up in front of the trembl sequences.
     '''
-    output = open(outputfile,'w') # outputfile
     groups = set() # set of groupIDs that have swissprot sequences
     with open(inputfile,'r') as inGroup:
         for line in inGroup:
@@ -78,6 +77,7 @@ def pull_uniprot(inputfile, outputfile, cutoff):
             else:
                 continue
     print "number of groups: ", len(groups)
+    output = open(outputfile,'w') # outputfile
     with open(inputfile,'r') as inGroup:
         for line in inGroup:
             groupID = line.strip("\n").split("\t")[1]
