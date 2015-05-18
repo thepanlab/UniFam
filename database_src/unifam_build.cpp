@@ -212,13 +212,15 @@ int main(int argc, char ** argv){
 			    group_names.push_back(it->first);
 
 		    omp_set_num_threads(nThreads);
+		    string hmm_dir = outputDir + Utils::getPathSeparator() + to_string(myGroup);
+		    Utils::mkdirIfNonExist(hmm_dir);
 		#pragma omp parallel for
 		    for (size_t i = 0; i < group_names.size(); i++) {
 			    string group_name = group_names.at(i);
 			    int res = 0;
 			    size_t group_size;
 			    string tmp_fasta = tmpDir + Utils::getPathSeparator() + group_name + ".fasta";
-			    string hmm_name = outputDir + Utils::getPathSeparator() + group_name + ".hmm";
+			    string hmm_name = hmm_dir + Utils::getPathSeparator() + group_name + ".hmm";
 			    group_seqs(group_name, seq_ofs, groupMap, fasta_file, tmp_fasta, group_size);
 			    res = msa_hmm(group_name, group_size, tmp_fasta, hmm_name, mafft_cmd_path, hmmbuild_cmd_path);
 
