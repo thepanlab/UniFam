@@ -18,6 +18,7 @@ from datetime import datetime
 
 # Import local modules
 import UniFam_lib # in this directory
+import UniFam_lib_batch
 
 ## Version
 version_str = "1.1.0"
@@ -43,6 +44,8 @@ parser.add_argument("--version", action="version",version='%(prog)s {}'.format(v
 ## --verbose mode, default: false (quiet mode)
 parser.add_argument("-v", "--verbose", action="store_true",help="verbose mode, more output")
 #parser.add_argument("-n", "--dryrun", action="store_true",help="dryrun, only print commands, do not execute")
+
+parser.add_argument("-b", "--batch", action="store_true",help="batch mode to construct pathway", dest="batch")
 
 ## input files and directories
 ## configuration file, required
@@ -80,8 +83,12 @@ def main(argv=None):
     config = ConfigParser.ConfigParser()
     config.read(args.configFile)
 
+
     # Annotating with UniFam
-    UniFam_lib.UniFam(args.inputFile,config,args.verbose)
+    if args.batch:
+        UniFam_lib_batch.UniFam(args.inputFile,config,args.verbose)
+    else:
+        UniFam_lib.UniFam(args.inputFile,config,args.verbose)
 
     # write the configuration file to standard output for checking
     # config.write(sys.stdout)

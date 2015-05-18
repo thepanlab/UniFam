@@ -1030,17 +1030,17 @@ def UniFam(inputfile, config, verbose=False):
         readme.write("hmmsearch result with proteinName, groupName, E-value is {}\n".format(os.path.basename(group_file)))
     else:
         sys.stdout.write('>> Parsing skipped. \n\n')
-
+    
     # read annotation for the corresponding database
     annotFile = config.get('UniFam','dataDir') + config.get('UniFam','annotFile')
     annot = read_annot(annotFile)
-
+    
     # output file (Annotation file in flat tab delimited format) in the working directory
     annot_proteins(group_file, annot, outputAnnot, Eval=config.getfloat('hmmsearch','eval'))
     annot_header(outputAnnot,inputfaa,outputfaa) # integrate annotation to the output fasta file
     readme.write("Protein annotations as a flat file is {}\n".format(os.path.basename(outputAnnot)))
     readme.write("Fasta file of proteins with annotations in their header lines is {}\n".format(os.path.basename(outputfaa)))
-
+    
     doPwy = config.getboolean('UniFam','doPathway')
     if doPwy:
         # If the input is not contigs, then the genomic sequence is missing, print warning message.
