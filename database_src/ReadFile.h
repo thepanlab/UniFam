@@ -30,12 +30,13 @@ using namespace std;
 void read_group_sg(const string & file_name, unordered_map<string, UINT16> & seq_gp, map<UINT16, vector<UINT16> > & group_len_map);
 void read_faidx(const string & file_name, unordered_map<string, UINT64> & seq_ofs);
 void read_group(const string & group_file, unordered_map<string, vector<string> > & groupMap);
+void read_fastaseq(const string & fastafile, unordered_map<string, string> & seqMap);
 
 void filter_fasta(const string & fasta_file, const unordered_map<string, UINT16> & seq_gp, const string & out_fasta);
 void get_seq(ifstream & fin, const string & seqID, const UINT64 & offset, ofstream & fout);
-void split_group(unordered_map<string, vector<string> > & groupMap, const unordered_map<string, UINT64> & seq_ofs, ifstream & fin, const size_t & size, const string & output_prefix);
+void split_group_fasta(unordered_map<string, vector<string> > & groupMap, const unordered_map<string, string> & seqMap, const size_t & size, const string & output_prefix);
 void split_group(unordered_map<string, vector<string> > & groupMap, const size_t & size, const string & output_prefix);
-
+void group_seqs_mem(const string & group_name, const unordered_map<string, string> & seqMap, const unordered_map<string, vector<string> > & groupMap, const string & fasta_name, size_t & group_size);
 void group_seqs(const string & group_name, const unordered_map<string, UINT64> & seq_ofs, const unordered_map<string, vector<string> > & groupMap, ifstream & fin, const string & fasta_name, size_t & group_size);
 int msa_hmm(const string & group_name, const size_t & group_size, const string & fasta_name, const string & hmm_file, const string & mafft_prefix, const string & hmm_prefix);
 #endif //READFILE.HPP

@@ -27,7 +27,6 @@ using namespace std;
  *                map: groupID -> length of centroid
  * =====================================================================================
  */
-
 void read_group_sg(const string & file_name, unordered_map<string, UINT16> & seq_gp, map<UINT16, vector<UINT16> > & group_len_map){
 	ifstream ingroup(file_name.c_str());
 	if(!ingroup)
@@ -174,12 +173,14 @@ void read_group(const string & group_file, unordered_map<string, vector<string> 
 }
 
 
-void split_group(unordered_map<string, vector<string> > & groupMap, const unordered_map<string, UINT64> & seq_ofs, ifstream & fin, const size_t & size, const string & output_prefix)
+void split_group_fasta(unordered_map<string, vector<string> > & groupMap, const unordered_map<string, string> & seqMap, const size_t & size, const string & output_prefix)
 {
 	size_t num_group = groupMap.size();
 	size_t g_index = 0;
 	int piece = 0;
 	unordered_map<string, vector<string> >::iterator it = groupMap.begin();
+	string output_dir = Utils::getProgramName(output_prefix);
+	Utils::mkdirIfNonExist(output_dir);
 	while(it != groupMap.end()){
 		string out_group = output_prefix + to_string(piece) + ".group";
 		string out_fasta = output_prefix + to_string(piece) + ".fasta";
@@ -191,11 +192,11 @@ void split_group(unordered_map<string, vector<string> > & groupMap, const unorde
 			for(size_t j = 0; j < group_size; j++){
 				string seqID = (it->second).at(j);
 				gout << seqID << "\t" << it->first << endl;
-				get_seq(fin, seqID, seq_ofs.at(seqID),fout);
+				fout << ">" << seqID << "\n" << seqMap.at(seqID) << endl;
 			}
 			it++;
-			g_index++;
 		}
+		g_index = end;
 		piece++;
 		gout.close();
 		fout.close();
@@ -227,6 +228,17 @@ void split_group(unordered_map<string, vector<string> > & groupMap, const size_t
 }
 
 
+void group_seqs_mem(const string & group_name, const unordered_map<string, string> & seqMap, const unordered_map<string, vector<string> > & groupMap, const string & fasta_name, size_t & group_size)
+{
+	vector<string> seqIDs = groupMap.at(group_name); /* sequence IDs */
+	group_size = seqIDs.size();
+	ofstream fasta_out(fasta_name.c_str()); /* output fasta file stream */
+	for(size_t i = 0; i < group_size; i++){
+		string seqID = seqIDs.at(i);
+		fasta_out << ">" << seqID << "\n" << seqMap.at(seqID) << endl;
+	}
+	fasta_out.close();
+}
 
 void group_seqs(const string & group_name, const unordered_map<string, UINT64> & seq_ofs, const unordered_map<string, vector<string> > & groupMap, ifstream & fin, const string & fasta_name, size_t & group_size)
 {
@@ -258,4 +270,57 @@ int msa_hmm(const string & group_name, const size_t & group_size, const string &
 		cout << "msa_hmm failed on " << group_name << endl;
 	remove(fasta_name.c_str());
 	return res;
+}
+
+
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  read_fastaseq
+ *  Description:  read fasta file and store sequences in a unordered map <seqID => seq>
+ * =====================================================================================
+ */
+void read_fastaseq(const string & fastafile, unordered_map<string, string> & seqMap)
+{
+	seqMap.clear();
+	seqMap.reserve(100000000);
+	string line, seqID, seq;
+	char first_char;
+	seq = "";
+
+	//read the fasta file
+	ifstream myfile(fastafile.c_str());
+
+	while (myfile.get(first_char)) {
+
+		// if the line contains sequence name
+		if ( first_char == '>')
+		{
+			// if this is not the first sequence in the file, build map
+			if (seq.compare("")!=0) {
+				seqMap[seqID] = seq;
+				// get sequence ID until the first space, and ignore the rest of annotation
+				myfile >> seqID;
+				myfile.ignore(numeric_limits<streamsize>::max(),'\n');
+			}
+			else{
+				// get sequence ID until the first space, and ignore the rest of annotation
+				myfile >> seqID;
+				myfile.ignore(numeric_limits<streamsize>::max(),'\n');
+			}
+
+			//reset seq
+			seq = "";
+		}
+		else
+		{
+			myfile.unget();
+			getline(myfile,line);
+			seq = seq + line;
+		}
+	}
+
+	// the last sequence
+	seqMap[seqID] = seq;
+	myfile.close();
 }

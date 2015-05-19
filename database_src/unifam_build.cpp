@@ -19,20 +19,19 @@
 
 using namespace std;
 // slave process, everybody is slave...
-void SlaveProcess(const string & fasta_file, const vector<string> & group_files, const string & tmpDir, const string &outputDir,
-                  const string & mafft_cmd_path, const string & hmmbuild_cmd_path, 
-		  const unordered_map<string, UINT64> & seq_ofs, const size_t & nThreads);
+void SlaveProcess(const string & fasta_dir, const vector<string> & group_files, const string & tmpDir, const string &outputDir,
+                  const string & mafft_cmd_path, const string & hmmbuild_cmd_path, const size_t & nThreads);
 void MasterProcess(const size_t & num_groups);
 /* print usage */
 void usage()
 {
     cout << " [Usage]" << endl
-    << "  unifam_build [options] -f <fasta_file> -in <group_dir> -td <tmpDir> -od <outputDir> " << endl
+    << "  unifam_build [options] -fd <fasta_dir> -gd <group_dir> -td <tmpDir> -od <outputDir> " << endl
     << "  -align <mafft_cmd_path> -build <hmmbuild_cmd_path>" << endl
     << endl
     << " [Inputs]" << endl
-    << "   -f <fasta_file> fasta file including all the protein sequences" << endl
-    << "   -in <group_dir> directory with all the group files" << endl
+    << "   -fd <fasta_dir> directory with all the group files" << endl
+    << "   -gd <group_dir> directory with all the group files" << endl
     << "   -align <mafft_cmd_path> full path for the alignment command (mafft)" << endl
     << "   -build <hmmbuild_cmd_path> full path for hmmbuild" << endl
     << endl
@@ -47,7 +46,7 @@ void usage()
 }
 
 void initializeArguments(int argc, char **argv,
-                         string & fasta_file, // fasta file with all sequences to extract
+                         string & fasta_dir, // fasta file with all sequences to extract
 			 string & group_dir, // directory with all the group files
                          string & tmpDir, // temporary output directory
                          string & outputDir, // output directory for the group files
@@ -58,7 +57,7 @@ void initializeArguments(int argc, char **argv,
 {
     vector<string> Arguments;
     
-    fasta_file  = "";
+    fasta_dir  = "";
     group_dir  = "";
     tmpDir = "";
     outputDir = "";
@@ -72,12 +71,12 @@ void initializeArguments(int argc, char **argv,
     for(int i = 1; i <= (int)Arguments.size()-1; i++)
     {
         // input fastafile
-        if (Arguments[i] == "-f") {
-            fasta_file = Arguments[++i];
+        if (Arguments[i] == "-fd") {
+            fasta_dir = Arguments[++i];
         }
         
 	// group file directory
-	else if (Arguments[i] == "-in") {
+	else if (Arguments[i] == "-gd") {
             group_dir = Arguments[++i];
         }
         
@@ -115,7 +114,7 @@ void initializeArguments(int argc, char **argv,
         }
     }
     // check required arguments
-    if ((group_dir == "") || (fasta_file == "") || (tmpDir == "") || (outputDir == "") || (mafft_cmd_path == "")
+    if ((group_dir == "") || (fasta_dir == "") || (tmpDir == "") || (outputDir == "") || (mafft_cmd_path == "")
         || (hmmbuild_cmd_path == ""))
     {
         cerr << "miss necessary parameter(s)"<<endl;
@@ -125,7 +124,7 @@ void initializeArguments(int argc, char **argv,
     if (nThreads == 0)
 	    nThreads = omp_get_max_threads();
 
-//    cout << "Input fasta file is: " << fasta_file << endl;
+//    cout << "Input fasta file is: " << fasta_dir << endl;
 //    cout << "Input directory with group files is: " << group_dir << endl;
 //    cout << "Temporary directory is: " << tmpDir << endl;
 //    cout << "Output directory is: " << outputDir << endl;
@@ -148,7 +147,7 @@ int main(int argc, char ** argv){
     
     /********************** variable declaration *********************/
     
-    string fasta_file, group_dir, mafft_cmd_path, hmmbuild_cmd_path, tmpDir, outputDir;
+    string fasta_dir, group_dir, mafft_cmd_path, hmmbuild_cmd_path, tmpDir, outputDir;
     vector<string> group_files;
     unordered_map<string, UINT64> seq_ofs; 
     size_t nThreads; 
@@ -175,18 +174,16 @@ int main(int argc, char ** argv){
     /************ initialize arguments, for input, output, and options ***********/
     
 //    cout << "Maximum threads possible: " << nThreads << endl;
-    initializeArguments(argc, argv, fasta_file, group_dir, tmpDir, outputDir, mafft_cmd_path, hmmbuild_cmd_path, nThreads);
+    initializeArguments(argc, argv, fasta_dir, group_dir, tmpDir, outputDir, mafft_cmd_path, hmmbuild_cmd_path, nThreads);
     Utils::getFiles(group_dir, "group", group_files);
     size_t num_groups = group_files.size();
     
     Utils::mkdirIfNonExist(tmpDir);
     Utils::mkdirIfNonExist(outputDir);
 
-    read_faidx(fasta_file+".fai", seq_ofs);
-    
     /* echo the arguments */
     if (myid == 0) {
-        cout<< "   Fasta file with all proteins is : " << fasta_file << ", total sequences: " << seq_ofs.size() << endl
+        cout<< "   Directory with all the fasta files is : " << fasta_dir << endl
             << "   Directory with all the group files is : " << group_dir << ", which has " << num_groups << " groups" << endl
             << "   Temporary output directory is : " << tmpDir << endl
             << "   Output directory is : " << outputDir << endl
@@ -205,14 +202,19 @@ int main(int argc, char ** argv){
 	    }
 
 	    else
-		    SlaveProcess(fasta_file, group_files, tmpDir, outputDir, mafft_cmd_path, hmmbuild_cmd_path, seq_ofs, nThreads);
+		    SlaveProcess(fasta_dir, group_files, tmpDir, outputDir, mafft_cmd_path, hmmbuild_cmd_path, nThreads);
     }
     else{ /* If there is only one node, running in multi-thread mode */
 	    cout << "Only 1 process, running with multiple threads. \n";
 	    for(size_t myGroup = 0; myGroup < num_groups; myGroup++){
 		    string group_file = group_files.at(myGroup);
+		    string fasta_file = fasta_dir + Utils::getPathSeparator() + Utils::getFilename2(group_file) + ".fasta";
+
 		    unordered_map<string, vector<string> > groupMap;	
+		    unordered_map<string, string> seqMap;	
 		    read_group(group_file, groupMap);
+		    read_fastaseq(fasta_file, seqMap);
+
 		    vector<string> group_names;
 		    for(unordered_map<string, vector<string> >::iterator it = groupMap.begin(); it != groupMap.end(); it++)
 			    group_names.push_back(it->first);
@@ -220,15 +222,14 @@ int main(int argc, char ** argv){
 		    omp_set_num_threads(nThreads);
 		    string hmm_dir = outputDir + Utils::getPathSeparator() + to_string(myGroup);
 		    Utils::mkdirIfNonExist(hmm_dir);
-		#pragma omp parallel for
+		    #pragma omp parallel for
 		    for (size_t i = 0; i < group_names.size(); i++) {
 			    string group_name = group_names.at(i);
-			    int res = 0;
-			    size_t group_size;
+			    size_t group_size;  /* to store the group size */
 			    string tmp_fasta = tmpDir + Utils::getPathSeparator() + group_name + ".fasta";
 			    string hmm_name = hmm_dir + Utils::getPathSeparator() + group_name + ".hmm";
-			    group_seqs(group_name, seq_ofs, groupMap, fasta_file, tmp_fasta, group_size);
-			    res = msa_hmm(group_name, group_size, tmp_fasta, hmm_name, mafft_cmd_path, hmmbuild_cmd_path);
+			    group_seqs_mem(group_name, seqMap, groupMap, tmp_fasta, group_size);
+			    msa_hmm(group_name, group_size, tmp_fasta, hmm_name, mafft_cmd_path, hmmbuild_cmd_path);
 
 		    }
 	    }
@@ -289,9 +290,8 @@ void MasterProcess(const size_t & num_groups)
 
 
 
-void SlaveProcess(const string & fasta_file, const vector<string> & group_files, const string & tmpDir, const string &outputDir,
-                  const string & mafft_cmd_path, const string & hmmbuild_cmd_path, 
-		  const unordered_map<string, UINT64> & seq_ofs, const size_t & nThreads)
+void SlaveProcess(const string & fasta_dir, const vector<string> & group_files, const string & tmpDir, const string &outputDir,
+                  const string & mafft_cmd_path, const string & hmmbuild_cmd_path, const size_t & nThreads)
 {
     MPI_Status status;
     int myid;
@@ -309,8 +309,13 @@ void SlaveProcess(const string & fasta_file, const vector<string> & group_files,
         
         /* do the pipeline process for all the groups in this chunk */
 	string group_file = group_files.at(myGroup);
+	string fasta_file = fasta_dir + Utils::getPathSeparator() + Utils::getFilename2(group_file) + ".fasta";
+
 	unordered_map<string, vector<string> > groupMap;	
+	unordered_map<string, string> seqMap;	
+	read_fastaseq(fasta_file, seqMap);
 	read_group(group_file, groupMap);
+
 	vector<string> group_names;
 	for(unordered_map<string, vector<string> >::iterator it = groupMap.begin(); it != groupMap.end(); it++)
 		group_names.push_back(it->first);
@@ -321,12 +326,11 @@ void SlaveProcess(const string & fasta_file, const vector<string> & group_files,
         #pragma omp parallel for
         for (size_t i = 0; i < group_names.size(); i++) {
             string group_name = group_names.at(i);
-            int res = 0;
 	    size_t group_size;
             string tmp_fasta = tmpDir + Utils::getPathSeparator() + group_name + ".fasta";
             string hmm_name = hmm_dir + Utils::getPathSeparator() + group_name + ".hmm";
-	    group_seqs(group_name, seq_ofs, groupMap, fasta_file, tmp_fasta, group_size);
-	    res = msa_hmm(group_name, group_size, tmp_fasta, hmm_name, mafft_cmd_path, hmmbuild_cmd_path);
+	    group_seqs_mem(group_name, seqMap, groupMap, tmp_fasta, group_size);
+	    msa_hmm(group_name, group_size, tmp_fasta, hmm_name, mafft_cmd_path, hmmbuild_cmd_path);
             
         }
         /************************ parse domtab files *********************************/
