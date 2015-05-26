@@ -56,7 +56,7 @@ def getHMMFromFile(fin):
 ## =================================================================
 ## Function: splitReads
 ## =================================================================
-def splitReads(inputFile, prefix, count, summary):
+def splitReads(inputFile, prefix, count, summary, bpcount):
     ''' Split big fasta/fastq file into smaller ones, each contains a number of reads.
         Input:  inputFile - big file to split
                 count - number of reads in each small file
@@ -82,6 +82,7 @@ def splitReads(inputFile, prefix, count, summary):
     readCount = 0
     max_read_len = 0
     min_read_len = 100000
+    sys.stderr.write("number of records in each file:{}\n".format(count))
     with open(inputFile,'r') as fin:
         if fileType == "fastq":
             for readLines in getReadFromFastq(fin):
@@ -89,8 +90,8 @@ def splitReads(inputFile, prefix, count, summary):
                 seq_len = len(readLines.split("\n"[1]))
                 max_read_len = max_read_len if max_read_len > seq_len else seq_len
                 min_read_len = min_read_len if min_read_len < seq_len else seq_len
-                readCount = readCount + 1
-                if readCount == count:
+                readCount = readCount + (seq_len if bpcount else 1)
+                if readCount >= count:
                     fout.close()
                     summary.write("{}\t{}\t{}\n".format(outFileName, max_read_len, min_read_len))
                     max_read_len = 0
@@ -105,8 +106,8 @@ def splitReads(inputFile, prefix, count, summary):
                 seq_len = sum(map(len, readLines.split("\n")[1:]))
                 max_read_len = max_read_len if max_read_len > seq_len else seq_len
                 min_read_len = min_read_len if min_read_len < seq_len else seq_len
-                readCount = readCount + 1
-                if readCount == count:
+                readCount = readCount + (seq_len if bpcount else 1)
+                if readCount >= count:
                     fout.close()
                     summary.write("{}\t{}\t{}\n".format(outFileName, max_read_len, min_read_len))
                     max_read_len = 0
@@ -120,8 +121,8 @@ def splitReads(inputFile, prefix, count, summary):
                 fout.write(readLines)
                 max_read_len = max_read_len if max_read_len > hmm_len else hmm_len
                 min_read_len = min_read_len if min_read_len < hmm_len else hmm_len
-                readCount = readCount + 1
-                if readCount == count:
+                readCount = readCount + (hmm_len if bpcount else 1)
+                if readCount >= count:
                     fout.close()
                     summary.write("{}\t{}\t{}\n".format(outFileName, max_read_len, min_read_len))
                     max_read_len = 0
@@ -158,6 +159,7 @@ parser.add_argument("-s","--summary",help="summary file",dest='summary',required
 parser.add_argument("-c", "--count", help="number of sequences per file", dest='seqCount', required=False, default=10000, type=int)
 #parser.add_argument("-l", "--length", help="length cutoff for the sequences", dest='lengthCutoff', required=False, default=1, type=int)
 parser.add_argument("-v","--verbose",help="verbose, more output",action='store_true',dest='verbose')
+parser.add_argument("-bp","--bpcount",help="instead of equal number of sequences, do equal number of bps/aas/residues",action='store_true',dest='bpcount')
 ## =================================================================
 ## main function
 ## =================================================================
@@ -173,12 +175,14 @@ def main(argv=None):
         sys.stderr.write("Output file is {}\n".format(args.outputPrefix))
         #sys.stderr.write("Length cutoff is {}\n".format(args.lengthCutoff))
         sys.stderr.write("Number of sequences in each file is {}\n".format(args.seqCount))
+        if args.bpcount:
+            sys.stderr.write("Count bps/aas/residues instead of number of sequences/hmms\n")
 
 
     sys.stderr.write("\n===========================================================\n")
     start_time = time.time()
 
-    splitReads(args.seqFile, args.outputPrefix, args.seqCount, args.summary)
+    splitReads(args.seqFile, args.outputPrefix, args.seqCount, args.summary, args.bpcount)
     #with open(args.seqFile, 'r') as fin:
     #    for a in getReadFromFastq(fin):
     #        sys.stdout.write(">>>>\n{}".format(a))
