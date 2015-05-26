@@ -50,8 +50,9 @@ def getHMMFromFile(fin):
             length = int(line[5:-1].strip())
         elif line == "//\n":
             yield output, length
-    if len(output) > 0:
-        yield output,length
+            output = ""
+    yield output,length
+
 
 ## =================================================================
 ## Function: splitReads
