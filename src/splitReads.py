@@ -132,9 +132,11 @@ def splitReads(inputFile, prefix, count, summary, bpcount):
                     outFileName = "{}{:03}.{}".format(prefix, fileCount, fileType)
                     fout = open(outFileName, 'w')
                     readCount = 0
-
-    summary.write("{}\t{}\t{}\n".format(outFileName, max_read_len, min_read_len))
     fout.close()
+    if readCount > 0:
+        summary.write("{}\t{}\t{}\n".format(outFileName, max_read_len, min_read_len))
+    if readCount == 0:
+        os.remove(outFileName)
 
 
 ## =================================================================
