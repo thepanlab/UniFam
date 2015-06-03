@@ -88,7 +88,7 @@ def splitReads(inputFile, prefix, count, summary, bpcount):
         if fileType == "fastq":
             for readLines in getReadFromFastq(fin):
                 fout.write(readLines)
-                seq_len = len(readLines.split("\n"[1]))
+                seq_len = len(readLines.split("\n")[1])
                 max_read_len = max_read_len if max_read_len > seq_len else seq_len
                 min_read_len = min_read_len if min_read_len < seq_len else seq_len
                 readCount = readCount + (seq_len if bpcount else 1)
