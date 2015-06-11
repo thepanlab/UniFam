@@ -51,7 +51,7 @@ parser.add_argument("-b", "--batch", action="store_true",help="batch mode to con
 ## configuration file, required
 parser.add_argument("-c",help="configuration file",dest='configFile',required=True)
 ## input file, required
-parser.add_argument("-i",help="input fasta file",dest='inputFile',required=True)
+parser.add_argument("-i",help="input fasta file (contig or protein fasta/faa file)",dest='inputFile',required=True)
 
 
 ## output file, now this is removed, determined from the prefix argument instead
@@ -68,8 +68,8 @@ def main(argv=None):
     ## print some information
     if args.verbose:
         sys.stdout.write('running verbosely\n')
-        sys.stdout.write('configuration file is: {}\n'.format(args.configFile))
-        sys.stdout.write('input fasta file is: {}\n'.format(args.inputFile))
+        sys.stdout.write('configuration file is: {0}\n'.format(args.configFile))
+        sys.stdout.write('input fasta file is: {0}\n'.format(args.inputFile))
         #sys.stdout.write('output file is: {}\n'.format(args.outputFile))
     else:
         sys.stdout.write('\n')
@@ -77,7 +77,7 @@ def main(argv=None):
     # display work start, and time record
     start_time = datetime.now()
     sys.stderr.write("\n===============================================================================\n")
-    sys.stderr.write("Welcome to UniFam v{}: \n".format(version_str))
+    sys.stderr.write("Welcome to UniFam v{0}: \n".format(version_str))
 
     # read configuration file
     config = ConfigParser.ConfigParser()
