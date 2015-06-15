@@ -201,17 +201,38 @@ def read_annot(annot_file):
         Output: dictionary object
     '''
     annot_dict = dict()
+    header_dict = dict()
     with open(annot_file,'r') as annot:
+        first_line = annot.readline()
+        header = first_line.strip("\n").split("\t")
+        n = len(header)
+        for i in range(n):
+            s = header[i]
+            if "org" in s:
+                header_dict['org']=i
+            elif "GO" in s:
+                header_dict['GO']=i
+            elif "EC" in s:
+                header_dict['ECname']=i
+            elif "gene_name" in s:
+                header_dict['gene_name']=i
+            elif "OLN" in s:
+                header_dict['OLN']=i
+            elif "ORF" in s:
+                header_dict['ORF']=i
+            elif "KW" in s:
+                header_dict['KW']=i
+            elif "full_name" in s:
+                header_dict['full_name']=i
         for line in annot:
             line = line.strip("\n").split("\t") # strip EOF
             if line[0] != "geneID":  # skip header line
                 if len(line) > 7:
-                    annot_dict[line[0]] = {'org' : line[2], 'ECname' : line[3], 'gene_name' : line[4], 'OLN' : line[5], 'ORF' : line[6],\
-                    'full_name' : line[7], 'GO' : line[8], 'KW' : line[9]}
+                    annot_dict[line[0]] = {'org' : line[header_dict['org']], 'ECname' : line[header_dict['ECname']], 'gene_name' : line[header_dict['gene_name']], 'OLN' : line[header_dict['OLN']], 'ORF' : line[header_dict['ORF']],\
+                    'full_name' : line[header_dict['full_name']], 'GO' : line[header_dict['GO']], 'KW' : line[header_dict['KW']]}
                 elif len(line) > 5:
-                    annot_dict[line[0]] = {'ECname' : line[2], 'gene_name' : line[1], 'full_name' : line[3], 'GO' : line[5], 'KW' : line[4]}
+                    annot_dict[line[0]] = {'ECname' : line[header_dict['ECname']], 'gene_name' : line[header_dict['gene_name']], 'full_name' : line[header_dict['full_name']], 'GO' : line[header_dict['GO']], 'KW' : line[header_dict['KW']]}
     return annot_dict
-
 
 ## =================================================================
 ## function to read RNAmmer output .gff file to memory
