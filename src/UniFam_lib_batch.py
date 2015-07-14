@@ -1,6 +1,12 @@
+'''
+Created on May 18, 2015
+
+@author: qy2
+'''
 #!/usr/bin/python
 
 '''
+Copied From
 UniFam_lib.py
 
 Functions needed for UniFam pipeline.
@@ -927,6 +933,8 @@ def run_tRNAscan(config):
 ## UniFam pipeline, for annotation
 ## =================================================================
 def UniFam(inputfile, config, verbose=False):
+    sys.stdout.write('This is Unifam Pathway Construction\n')
+    
     # common prefix for the output files
     prefix = config.get('UniFam','name')
     # replace any non-alphanumeric character or underscore to underscore
@@ -936,7 +944,7 @@ def UniFam(inputfile, config, verbose=False):
     inputformat = config.get('UniFam','inputFormat') # get input format, contigs or proteins
     workdir = config.get('UniFam','workDir') + '/'
     outputAnnot = workdir + prefix + ".annot" # flat file with annotation for each protein
-    outputfaa = workdir + prefix + '_annot.faa' # faa with annotation at the header lines
+    #outputfaa = workdir + prefix + '_annot.faa' # faa with annotation at the header lines
     readme = open(workdir+'README','w') # README file that describes output files
 
     # if working directory does not exist, create the directory
@@ -944,6 +952,12 @@ def UniFam(inputfile, config, verbose=False):
         os.makedirs(workdir)
     readme.write("Working directory is {}\n".format(workdir))
     
+    cmd = "cat *.annot > "+ outputAnnot;
+    p = Popen(cmd , shell=True, stdout=None, stderr=None)
+    p.wait()
+
+
+    '''
     # starts with contigs, instead of proteins
     if inputformat == "contigs":
         prodigalCmdPrefix = prodigalCmd(config)
@@ -1061,7 +1075,7 @@ def UniFam(inputfile, config, verbose=False):
     annot_header(outputAnnot,inputfaa,outputfaa) # integrate annotation to the output fasta file
     readme.write("Protein annotations as a flat file is {}\n".format(os.path.basename(outputAnnot)))
     readme.write("Fasta file of proteins with annotations in their header lines is {}\n".format(os.path.basename(outputfaa)))
-    
+    '''
     doPwy = config.getboolean('UniFam','doPathway')
     if doPwy:
         # If the input is not contigs, then the genomic sequence is missing, print warning message.
@@ -1072,6 +1086,18 @@ def UniFam(inputfile, config, verbose=False):
         sys.stdout.write('[UniFam] >> preparing files for pathway reconstruction... \n')
         write_org_param(config)
         if inputformat == "contigs":
+            # common prefix for the output files
+            prefix = config.get('UniFam','name')    
+            # working directory
+            workdir = config.get('UniFam','workDir') + '/'
+            #faa = workdir + prefix + ".prod.faa"
+            #config.set('prodigal','faa',faa)
+            # output, *.prod.gbk
+            output = workdir + prefix + ".prod.gbk"
+            cmd2 = "cat *.prod.gbk > "+ output;
+            p2 = Popen(cmd2 , shell=True, stdout=None, stderr=None) 
+            p2.wait()
+            config.set('prodigal','prodout',output)
             genetic_element_gbk_contigs(inputfile, config, outputAnnot)
         else:
             genetic_element_gbk(config, outputAnnot)
@@ -1102,3 +1128,4 @@ def UniFam(inputfile, config, verbose=False):
         sys.stdout.write("===== >> {} \n\n".format(str(datetime.now()))) # print current time
 
     readme.close()
+    
