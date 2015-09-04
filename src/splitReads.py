@@ -66,7 +66,7 @@ def splitReads(inputFile, prefix, count, summary, bpcount):
         Output: prefix_03d.fasta/q
     '''
     fileExt = inputFile.split(".")[-1] # file type, fasta or fastq, autodetect
-    if fileExt in ["fa", "Fa", "fasta", "Fasta"]:  # either fa or fq
+    if fileExt in ["fa", "Fa", "faa", "Faa", "fna", "Fna", "fasta", "Fasta"]:  # either fa or fq
         fileType = "fasta" 
     elif fileExt in ["fq", "Fq", "fastq", "Fastq"]:  # either fa or fq
         fileType = "fastq" 
@@ -78,7 +78,7 @@ def splitReads(inputFile, prefix, count, summary, bpcount):
 
     fileCount = 1
     summary.write("file_name\tmax_len\tmin_len\n")
-    outFileName = "{}{:03}.{}".format(prefix, fileCount, fileType)
+    outFileName = "{}{}.{}".format(prefix, fileCount, fileType)
     fout = open(outFileName, 'w')
     readCount = 0
     max_read_len = 0
@@ -98,7 +98,7 @@ def splitReads(inputFile, prefix, count, summary, bpcount):
                     max_read_len = 0
                     min_read_len = 100000
                     fileCount = fileCount + 1
-                    outFileName = "{}{:03}.{}".format(prefix, fileCount, fileType)
+                    outFileName = "{}{}.{}".format(prefix, fileCount, fileType)
                     fout = open(outFileName, 'w')
                     readCount = 0
         elif fileType == "fasta":
@@ -114,7 +114,7 @@ def splitReads(inputFile, prefix, count, summary, bpcount):
                     max_read_len = 0
                     min_read_len = 100000
                     fileCount = fileCount + 1
-                    outFileName = "{}{:03}.{}".format(prefix, fileCount, fileType)
+                    outFileName = "{}{}.{}".format(prefix, fileCount, fileType)
                     fout = open(outFileName, 'w')
                     readCount = 0
         elif fileType == "hmm":
@@ -129,7 +129,7 @@ def splitReads(inputFile, prefix, count, summary, bpcount):
                     max_read_len = 0
                     min_read_len = 100000
                     fileCount = fileCount + 1
-                    outFileName = "{}{:03}.{}".format(prefix, fileCount, fileType)
+                    outFileName = "{}{}.{}".format(prefix, fileCount, fileType)
                     fout = open(outFileName, 'w')
                     readCount = 0
     fout.close()
