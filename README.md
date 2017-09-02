@@ -40,9 +40,7 @@ If a particular module is needed, go to the corresponding section in the configu
 
 3. Run the main script in the src directory.
 
-```
-#!bash
-
+```bash
 python UniFam.py -c configFile -i inputfile
 ```
 
