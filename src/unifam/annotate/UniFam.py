@@ -26,6 +26,7 @@ version_str = "1.1.0"
             analysis.
     1.0.0   First Stable version for release, UniFam 1.0.0
     1.1.0   Added README file to describe output files; zip pathway inference output results
+    1.1.1   Working on migrating to python 3.6, and clean up code.
 '''
 
 parser = argparse.ArgumentParser(description="Annotation of contigs/proteins using UniFam",
