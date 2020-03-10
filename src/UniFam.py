@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 '''
 UniFam.py
 
@@ -11,7 +9,7 @@ Copyright (c) 2014 JJ Chai (ORNL). All rights reserved.
 
 '''
 # Import Python modules
-import ConfigParser
+import configparser
 import argparse
 import sys
 from datetime import datetime
@@ -80,7 +78,7 @@ def main(argv=None):
     sys.stderr.write("Welcome to UniFam v{0}: \n".format(version_str))
 
     # read configuration file
-    config = ConfigParser.ConfigParser()
+    config = configparser.ConfigParser()
     config.read(args.configFile)
 
 

@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 '''
 UniFam_lib.py
 
@@ -12,7 +10,7 @@ Copyright (c) 2014 JJ Chai (ORNL). All rights reserved.
 '''
 # Import Python modules
 from subprocess import Popen, PIPE, check_call, STDOUT
-import ConfigParser
+import configparser
 import sys, os
 import re
 import shutil
@@ -458,7 +456,7 @@ def write_org_param(config):
     try:
         gffFile = config.get('prodigal','prodout')
         org_param.write('{0:}\t{1:}\n'.format("CODON-TABLE",transl_table(gffFile))) # CODON-TABLE line
-    except ConfigParser.NoOptionError:
+    except configparser.NoOptionError:
         org_param.write('{0:}\t{1:}\n'.format("CODON-TABLE",11)) # CODON-TABLE line
 
     org_param.write('{0:}\t{1:}\n'.format("DBNAME",dbID + "Cyc")) #DBNAME line
@@ -512,7 +510,7 @@ def write_genetic_element_and_annot(config, annot, group_count_dict, annot_forma
     # Otherwise consider every thing as from a giant contig
     try:
         prod_outfile = config.get('prodigal','prodout')
-    except ConfigParser.NoOptionError:
+    except configparser.NoOptionError:
         prod_outfile = "NA"
         config.set('prodigal', 'prodout', "NA")
     if prod_outfile != "NA":

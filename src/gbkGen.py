@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 '''
 gbkGen.py
 
@@ -11,7 +9,6 @@ Copyright (c) 2015 JJ Chai (ORNL). All rights reserved.
 
 '''
 # Import Python modules
-import ConfigParser
 import argparse
 import sys, os, re
 from datetime import datetime
