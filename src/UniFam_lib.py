@@ -965,7 +965,7 @@ def prodigalCmd(config):
     quiet = config.getboolean('prodigal','quiet')
 
     # prefix for the prodigal command, need to append input file to work
-    prodigalCmdPrefix = prodigalPath + ' -a ' + faa  + (' -c' if not runOffEdge else '') + ' -f ' + 'gbk' +  ' -m ' + ('normal' if procedure=='single' else 'anon')  + (' -q' if quiet else '') + ' -o ' + output
+    prodigalCmdPrefix = prodigalPath + ' -a ' + faa  + (' -c' if not runOffEdge else '') + ' -f ' + 'gbk' +  ' -p ' + ('single' if procedure=='single' else 'meta')  + (' -q' if quiet else '') + ' -o ' + output
 
     return prodigalCmdPrefix
 
@@ -1128,14 +1128,15 @@ def UniFam(inputfile, config, verbose=False):
     config.set('UniFam', 'name', prefix)
 
     inputformat = config.get('UniFam','inputFormat') # get input format, contigs or proteins
-    workdir = config.get('UniFam','workDir') + '/'
+    workdir = config.get('UniFam','workDir')
     outputAnnot = workdir + prefix + ".annot" # flat file with annotation for each protein
     outputfaa = workdir + prefix + '_annot.faa' # faa with annotation at the header lines
-    readme = open(workdir+'README','w') # README file that describes output files
+    
 
     # if working directory does not exist, create the directory
     if not os.path.exists(workdir):
         os.makedirs(workdir)
+    readme = open(workdir+'README','w') # README file that describes output files
     readme.write("Working directory is {}\n".format(workdir))
     
     # starts with contigs, instead of proteins
