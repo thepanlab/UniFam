@@ -534,9 +534,9 @@ def write_genetic_element_and_annot(config, annot, group_count_dict, annot_forma
         prod_outfile = "NA"
         config.set('prodigal', 'prodout', "NA")
     if prod_outfile != "NA":
-        contig_info = ProdialOutputParser.get_contig_info(prod_outfile)
+        contig_info = ProdigalOutputParser.get_contig_info(prod_outfile)
         write_genetic_element_prod(genetic_elem, contig_info, annot_format)
-        write_annot_prod(contig_info, annot_format)
+        write_annot_prod(config, contig_info, annot_format)
     else:
         write_genetic_element_noSeq(genetic_elem, annot_format)
         write_annot_noSeq(annot, group_count_dict, pf, annot_format)
@@ -545,29 +545,34 @@ def write_genetic_element_and_annot(config, annot, group_count_dict, annot_forma
     genetic_elem.close()
 
 
-class ProdialOutputParser(object):
+class ProdigalOutputParser(object):
     '''
     Collection of class methods that parse Prodigal output
     '''
     @classmethod
     def is_prodigal_header_line(cls, line):
-        assert isinstance(line, str), line
-        assert line.startswith('DEFINITION') or line.startswith('# Sequence Data:'), \
-            f'{line} does not start with "DEFINITION" or "# Sequence Data:"'
-        assert 'seqnum' in line, f'{line} does not contain "seqnum"'
+        if not isinstance(line, str):
+            return False
+        if not (line.startswith('DEFINITION') or line.startswith('# Sequence Data:')):
+            return False
+        if not 'seqnum' in line:
+            return False
+        return True
 
     @classmethod
     def prodigal_header_to_dict(cls, header_line):
-        assert cls.is_prodigal_header_line(header_line)
+        assert cls.is_prodigal_header_line(header_line), f'{header_line} is not prodigal header'
         seqnum_start_pos = header_line.find('seqnum')
         return dict(key_val.split('=') for key_val in header_line.strip('\n')[seqnum_start_pos:].split(';'))
 
     @classmethod
     def cds_note_line_to_dict(cls, line):
         assert isinstance(line, str), line
-        assert line.startswith('/note='), line
-        note_content_start_pos = line.find('=')
-        return dict(key_val.split('=') for key_val in line.strip('\n')[note_content_start_pos:].split(';'))
+        line = line.strip().strip('\n')
+        assert line.startswith('/note="'), line
+        assert line.endswith(';"'), line
+        note_content_start_pos = line.find('"')
+        return dict(key_val.split('=') for key_val in line[note_content_start_pos + 1:-2].split(';'))
 
     @classmethod
     def get_seq_type(cls, header_line):
@@ -626,7 +631,7 @@ class ProdialOutputParser(object):
         contig's sequence number(in string) to its information, including its id, sequence type, and circularity
         '''
         contigs_info = dict()
-        seqnum = 0
+        print(f'Reading prodigal input file {prod_outfile}')
         with open(prod_outfile, 'r') as prod_out:
             for line in prod_out:
                 if cls.is_prodigal_header_line(line):
@@ -697,9 +702,9 @@ def write_genetic_element_prod(genetic_elem, contig_info, annot_format="pf"):
     chrsmCt = 0
     contigCt = 0
 
-    for i in contigs_info:
-        seqType = contigs_info[i]['seqType']
-        seqID = contigs_info[i]['seqID']
+    for i in contig_info:
+        seqType = contig_info[i]['seqType']
+        seqID = contig_info[i]['seqID']
         if seqType == "CHRSM":
             chrsmCt += 1
             element_id = seqType + "-" + str(chrsmCt)
@@ -712,7 +717,7 @@ def write_genetic_element_prod(genetic_elem, contig_info, annot_format="pf"):
 
         genetic_elem.write('{0:}\t{1:}\n'.format("ID", element_id))  # id of this genetic element
         genetic_elem.write('{0:}\t:{1:}\n'.format("TYPE", seqType))  # chromosome, or plasmid, or other
-        genetic_elem.write('{0:}\t{1:}\n'.format("CIRCULAR?", contigs_info[i]['circular']))  # circular or not
+        genetic_elem.write('{0:}\t{1:}\n'.format("CIRCULAR?", contig_info[i]['circular']))  # circular or not
 
         annot_file = element_id + "." + annot_format
         contig_info[i]['annotFile'] = annot_file  # add another attribute to the contig's information: annotation file name
@@ -722,7 +727,7 @@ def write_genetic_element_prod(genetic_elem, contig_info, annot_format="pf"):
         genetic_elem.write("//\n")  # indicator of end of current genetic element
 
 
-def write_annot_prod(contig_info, prod_outfile, annot_format):
+def write_annot_prod(config, contig_info, annot_format):
     ''' 
     '''
     # directory to store the files for pathologic
@@ -741,10 +746,10 @@ def write_annot_prod(contig_info, prod_outfile, annot_format):
         rRNAoutput = config.get('RNAmmer', 'rRNAoutput')
         rrna_dict = read_rnammer_gff(rRNAoutput)
 
-    for contig_num in contigs_info:
+    for contig_num in contig_info:
         # write the annotation file for this genetic element
-        annot_out = open(pathway_dir + "/" + contigs_info[contig_num]['annot_file'], "w")
-        proteins = contigs_info[contig_num]['proteins']
+        annot_out = open(pathway_dir + "/" + contig_info[contig_num]['annot_file'], "w")
+        proteins = contig_info[contig_num]['proteins']
         for protein_num in proteins:
             protein_id = contig_num + "_" + protein_num
             write_annot(annot, protein_id, annot_out, annot_format, proteins[protein_num])  # TODO function to implement
