@@ -1,0 +1,18 @@
+#!/bin/bash
+#SBATCH --partition=omicsbio
+#SBATCH --ntasks=1
+#SBATCH --time=02:00:00
+#SBATCH --job-name=unifam
+#SBATCH --mem=10G
+#SBATCH --workdir=/work/omicsbio/lizhang12/tools/UniFam/example/prok_isolate_genome
+#SBATCH --output=isolate_%J_stdout.txt
+#SBATCH --error=isolate_%J_stderr.txt
+#SBATCH --mail-user=mail.address
+#SBATCH --mail-type=ALL
+
+module load Prodigal/2.6.3-GCC-4.9.3-2.25
+module load XML-Parser/2.44_01-foss-2017b-Perl-5.26.0
+
+python /work/omicsbio/lizhang12/tools/UniFam/src/UniFam.py -c config.cfg -i prok_isolate_genome.fna
+
+
