@@ -43,5 +43,6 @@ class SysUtil(object):
             logging.info(f'command line {cmd_line} with timeout={timeout} failed with error:\n{err}')
             print(f'command line {cmd_line} with timeout={timeout} failed with error\n{err}')
             raise
+        logging.info(f'command line run finished, output will be returned')
         std_out = completed_proc.stdout.decode()
         return std_out
