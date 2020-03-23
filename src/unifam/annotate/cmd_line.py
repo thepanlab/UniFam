@@ -25,9 +25,16 @@ class CmdLineGenerator(object):
         self._config.read(config_file)
         self._unifam_dir_spec = UniFamDirSpec.from_config(self._config)
         self._input_file = self._config.get('UniFam', 'input_file')
+        self._input_format = self._config.get('UniFam', 'input_format')
+
+    def get_input_faa_file(self):
+        if self._input_format == 'contigs':
+            return self._unifam_dir_spec.get_prodigal_out_file('faa')
+        return self._input_file
 
     def get_prodigal_cmd(self):
         assert self._config.has_section('prodigal')
+        assert self._input_format == 'contigs', self._input_format
         prodigal_dict = dict(self._config['prodigal'])
         prodigal_dict.update({'input_file': self._input_file,
                               'translation_file': self._unifam_dir_spec.get_prodigal_out_file('faa'),
@@ -39,6 +46,7 @@ class CmdLineGenerator(object):
 
     def get_RNAmmer_cmd(self):
         assert self._config.has_section('RNAmmer')
+        assert self._input_format == 'contigs', self._input_format
         RNAmmer_dict = dict(self._config['RNAmmer'])
         RNAmmer_dict.update({'input_file': self._input_file, 'domain': self._config.get('UniFam', 'domain'),
                              'output_gff_file': self._unifam_dir_spec.get_RNAmmer_gff_file()})
@@ -46,6 +54,7 @@ class CmdLineGenerator(object):
 
     def get_tRNAscan_cmd(self):
         assert self._config.has_section('tRNAscan')
+        assert self._input_format == 'contigs', self._input_format
         tRNAscan_dict = dict(self._config['tRNAscan'])
         if 'quiet' in tRNAscan_dict:
             tRNAscan_dict['quiet'] = ast.literal_eval(tRNAscan_dict['quiet'])
@@ -55,6 +64,7 @@ class CmdLineGenerator(object):
 
     def get_hmmsearch_cmd(self):
         assert self._config.has_section('hmmsearch')
+        assert self._input_format == 'contigs', self._input_format
         hmmsearch_dict = dict(self._config['hmmsearch'])
         hmmsearch_dict.update({'input_file': self._input_file,
                                'domtbl_out_file': self._unifam_dir_spec.get_hmmsearch_domtbl_file(),
