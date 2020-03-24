@@ -13,7 +13,11 @@ class SysUtil(object):
         assert isinstance(dir_path, str), dir_path
         if os.path.exists(dir_path) and os.path.isdir(dir_path):
             return
-        os.makedirs(dir_path)
+        try:
+            os.makedirs(dir_path)
+        except Exception:
+            f'makedirs({dir_path}) failed'
+            raise
         assert os.path.isdir(dir_path), f'{dir_path} is not a directory'
 
     @classmethod

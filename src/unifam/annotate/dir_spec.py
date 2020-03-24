@@ -28,17 +28,17 @@ class UniFamDirSpec(object):
         assert prefix, 'prefix is empty'
         # replace any non-alphanumeric character or underscore to underscore
         self._prefix = re.sub(r'\W', r'_', prefix)
-        self._work_dir = work_dir
+        self._work_dir = os.path.expandvars(work_dir)
 
     @classmethod
     def from_config(cls, config):
         assert isinstance(config, ConfigParser), type(config)
         prefix = config.get('UniFam', 'name')
-        work_dir = config.get('UniFam', 'workDir')
+        work_dir = config.get('UniFam', 'work_dir')
         return cls(work_dir, prefix)
 
-    def get_prefix(self):
-        return self._prefix
+    def get_path_prefix(self):
+        return os.path.join(self._work_dir, self._prefix)
 
     def get_protein_annot_file(self, use_faa_format=False):
         """

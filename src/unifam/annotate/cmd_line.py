@@ -59,7 +59,7 @@ class CmdLineGenerator(object):
         if 'quiet' in tRNAscan_dict:
             tRNAscan_dict['quiet'] = ast.literal_eval(tRNAscan_dict['quiet'])
         tRNAscan_dict.update({'input_file': self._input_file, 'domain': self._config.get('UniFam', 'domain'),
-                              'out_prefix': self._unifam_dir_spec.get_prefix()})
+                              'out_prefix': self._unifam_dir_spec.get_path_prefix()})
         return CmdLineHelper.get_tRNAscan_cmd(**tRNAscan_dict)
 
     def get_hmmsearch_cmd(self):
@@ -69,6 +69,8 @@ class CmdLineGenerator(object):
         hmmsearch_dict.update({'input_file': self._input_file,
                                'domtbl_out_file': self._unifam_dir_spec.get_hmmsearch_domtbl_file(),
                                'output_file': self._unifam_dir_spec.get_hmmsearch_out_file()})
+        if 'n_cpu' in hmmsearch_dict:
+            hmmsearch_dict['n_cpu'] = int(hmmsearch_dict['n_cpu'])
         return CmdLineHelper.get_hmmsearch_cmd(**hmmsearch_dict)
 
 
