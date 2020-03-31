@@ -322,12 +322,50 @@ class OutputReader(object):
     def read_tRNAscan_output(cls, tRNAscan_output_file):
         """
         Parse tRNAscan's output file *.o from -o option into data frame.
+
+        sample .tRNAscan.o content is below:
+
+        Sequence                tRNA    Bounds  tRNA    Anti    Intron Bounds   Inf
+        Name            tRNA #  Begin   End     Type    Codon   Begin   End     Score   Note
+        --------        ------  -----   ------  ----    -----   -----   ----    ------  ------
+        Contig1         1       1657    1733    Ile     GAT     0       0       73.8
+        Contig1         2       1797    1872    Ala     TGC     0       0       81.6
+
         """
         assert os.path.isfile(tRNAscan_output_file), tRNAscan_output_file
         assert tRNAscan_output_file.endswith('.o'), tRNAscan_output_file
         df = pd.read_csv(tRNAscan_output_file, sep='\t', skiprows=3, header=None,
-                         keep_default_na=False,
+                         keep_default_na=False, index_col=False,
                          names=['seq_name', 'tRNA_idx', 'tRNA_begin', 'tRNA_end',
                                 'tRNA_type', 'anti_codon',
                                 'intron_begin', 'intron_end', 'inf_score', 'Note'])
+        return df
+
+    @classmethod
+    def read_RNAmmer_gff(cls, RNAmmer_gff_file):
+        """
+        Parse RNAmmer's output file *.gff from -gff option into data frame.
+
+        sample .gff file content is below, the lines not starting with # are separated with \t
+
+        ##gff-version2
+        ##source-version RNAmmer-1.2
+        ##date 2020-03-30
+        ##Type DNA
+        # seqname           source                      feature     start      end   score   +/-  frame  attribute
+        # ---------------------------------------------------------------------------------------------------------
+        Contig1 RNAmmer-1.2     rRNA    2149    5078    3285.0  +       .       23s_rRNA
+        Contig1 RNAmmer-1.2     rRNA    7490    10419   3283.7  +       .       23s_rRNA
+        Contig1 RNAmmer-1.2     rRNA    5181    5296    77.0    +       .       5s_rRNA
+        Contig1 RNAmmer-1.2     rRNA    10513   10628   72.5    +       .       5s_rRNA
+        Contig1 RNAmmer-1.2     rRNA    8       1548    1853.3  +       .       16s_rRNA
+        Contig1 RNAmmer-1.2     rRNA    5629    7175    1931.7  +       .       16s_rRNA
+        # ---------------------------------------------------------------------------------------------------------
+
+        """
+        assert os.path.isfile(RNAmmer_gff_file), RNAmmer_gff_file
+        assert RNAmmer_gff_file.endswith('.gff'), RNAmmer_gff_file
+        df = pd.read_csv(RNAmmer_gff_file, sep='\t', comment='#', header=None,
+                         keep_default_na=False, index_col=False,
+                         names=['seq_name', 'source', 'feature', 'start', 'end', 'score', 'pm', 'frame', 'attribute'])
         return df
