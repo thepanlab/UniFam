@@ -20,9 +20,9 @@ import re
 #from subprocess import Popen, PIPE, check_call, STDOUT
 
 # Import local modules
-sys.path.append("/chongle/jj/01_PfClust/scripts")
-sys.path.append("/Users/cjg/Work/01_PfClust/scripts")
-import jj_utils
+#sys.path.append("/chongle/jj/01_PfClust/scripts")
+#sys.path.append("/Users/cjg/Work/01_PfClust/scripts")
+#import jj_utils
 
 ## =================================================================
 ## argument parser
@@ -76,7 +76,7 @@ def pull_uniprot(inputfile, outputfile, cutoff):
                     groups.add(groupID) # add this group to the groupID set
             else:
                 continue
-    print "number of groups: ", len(groups)
+    print("number of groups: ", len(groups))
     output = open(outputfile,'w') # outputfile
     with open(inputfile,'r') as inGroup:
         for line in inGroup:
@@ -96,11 +96,11 @@ def main(argv=None):
 
     ## print some information
     if args.verbose:
-        print 'running verbosely'
-        print 'input group file is: {}'.format(args.inputfile)
-        print 'output group file is: {}'.format(args.outputfile)
+        print('running verbosely')
+        print('input group file is: {}'.format(args.inputfile))
+        print('output group file is: {}'.format(args.outputfile))
     else:
-        print 'running quietly\n'
+        print('running quietly\n')
     ## display work start, and time record
     start_time = datetime.now()
     sys.stderr.write("\n===============================================================================\n")
@@ -108,10 +108,10 @@ def main(argv=None):
     ## run program and generate the fasta files
     pull_uniprot(args.inputfile,args.outputfile, args.cutoff)
     ## display work end, and time record, elapsed time
-    finish_time = datetime.now()
-    duration = finish_time - start_time
-    sys.stderr.write("\nTotal Elapsed Time = [%s] [seconds] \n" % jj_utils.format_time(duration))
-    sys.stderr.write("===============================================================================\n")
+    #finish_time = datetime.now()
+    #duration = finish_time - start_time
+    #sys.stderr.write("\nTotal Elapsed Time = [%s] [seconds] \n" % jj_utils.format_time(duration))
+    #sys.stderr.write("===============================================================================\n")
 
 ##==============================================================
 ## call from command line (instead of interactively)

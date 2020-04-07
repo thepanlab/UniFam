@@ -100,7 +100,7 @@ def group_annot(seqIDs, seq_dict):
             else:
                 sys.stderr.write("annotation key {} is neither string nor list\n".format(key))
         else: # lineage should be intersection
-            g_lineage = list(set.intersection(*(map(set, [myseq_dict[seqID][key] for seqID in seqIDs]))))
+            g_lineage = list(set.intersection(*(list(map(set, [myseq_dict[seqID][key] for seqID in seqIDs])))))
             sorted_lineage = value
             lineage_indices = [sorted_lineage.index(x) for x in g_lineage]
             gannot_dict[key] = [x for (y,x) in sorted(zip(lineage_indices, g_lineage))]
@@ -183,7 +183,7 @@ def parse_GN(string):
     ''' Parse GN (gene_name) record for a swissprot protein
         Return list (gene_name, OLN, ORF)
     '''
-    gene_name = map(lambda x:x.lower(), get_value(string, "Name") + get_value(string, "Synonyms"))
+    gene_name = [x.lower() for x in get_value(string, "Name") + get_value(string, "Synonyms")]
     OLN = get_value(string, "OrderedLocusNames")
     ORF = get_value(string, "ORFNames")
     return gene_name, OLN, ORF
@@ -211,7 +211,7 @@ def get_value(string, field):
         end_pos = string.find(';', field_pos) # ending position of the values
         values = values + strip_evidence(string[(field_pos+len(field) +1):end_pos]).split(',') # values are separated by comma
         start_pos = end_pos + 1
-    return map(lambda x:x.strip(), values)
+    return [x.strip() for x in values]
 
 def strip_evidence(string):
     ''' Strip the {evidence} string from the value string
