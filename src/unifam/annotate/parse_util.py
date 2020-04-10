@@ -120,8 +120,10 @@ class ProteinAnnotator(object):
         # calculate the ratios for convenience of filtering later
         domtab_df['seq_hmm_len_ratio'] = domtab_df['seq_len'].values / np.maximum(
             domtab_df['hmm_len'].values, 1e-8)
-        domtab_df['hmm_cover'] = (domtab_df['hmm_to'].values - domtab_df['hmm_from'].values + 1) / domtab_df['hmm_len'].values
-        domtab_df['seq_cover'] = (domtab_df['seq_to'].values - domtab_df['seq_from'].values + 1) / domtab_df['seq_len'].values
+        domtab_df['hmm_cover'] = (domtab_df['hmm_to'].values -
+                                  domtab_df['hmm_from'].values + 1) / domtab_df['hmm_len'].values
+        domtab_df['seq_cover'] = (domtab_df['seq_to'].values -
+                                  domtab_df['seq_from'].values + 1) / domtab_df['seq_len'].values
         return domtab_df
 
     @classmethod
