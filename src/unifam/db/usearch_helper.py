@@ -2,45 +2,82 @@
 This module contains utilities to parse usearch results.
 '''
 import os
-import sys
+import pandas as pd
 
 
 class UsearchHelper(object):
+    '''
+    TODO: rename the class
+
+    Usearch and annotation related methods.
+
+    Parameters
+    ----------
+    uc_file : str
+    '''
+
+    def __init__(self, uc_file):
+        self._uc_df = self.read_usearch_cluster_file_to_df(uc_file)
+
+    def get_sp_cluster_set(self):
+        '''
+        Returns
+        -------
+        set
+            set of cluster numbers that contain swissprot sequences.
+        '''
+        return set(self._uc_df[(self._uc_df['record_type'] != 'C') &
+                               (self._uc_df['query_label'].str.startswith('sp'))]['cluster_number'].values)
+
+    def get_seqs_in_cluster(self, cluster_number):
+        '''
+        Parameters
+        ----------
+        cluster_number : int
+            cluster number (index)
+
+        Returns
+        -------
+        list of str
+            list of sequence names in the cluster with given `cluster_number`.
+        '''
+        cluster_df = self._uc_df[self._uc_df['cluster_number'] == cluster_number]
+        seq_list = cluster_df[cluster_df['record_type'] != 'C']['query_label'].values.tolist()
+        num_seq_from_C = cluster_df[cluster_df['record_type'] == 'C']['length'].values[0]
+        assert len(seq_list) == num_seq_from_C, (f'number of sequences {len(seq_list)} != '
+                                                 f'cluster size from C records {num_seq_from_C}')
+        return seq_list
 
     @classmethod
-    def parse_cluster_file(cls, uc_file):
+    def read_usearch_cluster_file_to_df(cls, uc_file):
         '''
-        Parse usearch cluster (uc) format file.
+        Read tab separrated usearch cluster (uc) format file.
         See reference on this page: http://www.drive5.com/usearch/manual/opt_uc.html
+
+        Parameters
+        ----------
+        uc_file : str
+            path to the usearch cluster file
+
+        Returns
+        -------
+        pd.DataFrame
+            uc file pared to data frame, with dtype properly set,
+            and the unused columns removed.
         '''
         assert os.path.isfile(uc_file), uc_file
 
-    @classmethod
-    def parse_uc(cls, ucfile, group_sg_file, count_file=None, write_count=False):
-        """ Parse .uc file output from 'usearch clust' to get simpler summary of the groups.
-        Parameters
-        -----
-        ucfile : str
-            .uc file output from 'usearch clust'
-        group_sg_file : str
-            tab delimited group file that has 3 columns: sequenceID, group number, seed length
-        count_file : str
-            file to save the count of sequences in each group
-        """
-        group_sg_file.write("{}\t{}\t{}\n".format(
-            "sequenceID", "groupID", "seed_length"))
-        with open(ucfile, 'r') as f:
-            for line in f:
-                line = line.strip("\n")
-                line = line.split()
-                if line[0] != 'C':
-                    # sequenceID \t cluster_number \t length of seed sequence
-                    # if the sequence is not seed, write * for the length
-                    group_sg_file.write('{0:}\t{1:}\t{2:}\n'.format(
-                        line[-2], line[1], line[2] + '*' if line[-1] == '*' else line[2]))
-                else:
-                    if write_count:
-                        if count_file is None:
-                            count_file = sys.stdout
-                        # number of proteins in each group: groupID count
-                        count_file.write(line[1] + "\t" + line[2] + '\n')
+        # record_type H: hit, C: cluster record, S: centroid
+        # C records length field is the size of the cluster
+        # H,S records length field is the length of the query sequence
+        field_names = ['record_type', 'cluster_number', 'length', 'pct_identity',
+                       'strand', 'not_used_0', 'not_used_1', 'alignment', 'query_label', 'target_label']
+        use_cols = [col_name for col_name in field_names if not col_name.startswith('not_used_')]
+
+        dtype_dict = {col_name: str for col_name in use_cols}
+        dtype_dict.update({'cluster_number': int, 'length': int, 'pct_identity': float})
+
+        uc_df = pd.read_csv(uc_file, sep='\t', header=None, names=field_names, usecols=use_cols,
+                            keep_default_na=False, na_values={'pct_identity': '*'},
+                            dtype=dtype_dict)
+        return uc_df
