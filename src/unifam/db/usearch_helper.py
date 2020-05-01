@@ -5,15 +5,15 @@ import os
 import pandas as pd
 
 
-class UsearchHelper(object):
+class UsearchCluster(object):
     '''
-    TODO: rename the class
-
-    Usearch and annotation related methods.
+    Class to read usearch cluster result, and provid methods
+    related to clusters and their members
 
     Parameters
     ----------
     uc_file : str
+        path to usearch cluster result file
     '''
 
     def __init__(self, uc_file):
