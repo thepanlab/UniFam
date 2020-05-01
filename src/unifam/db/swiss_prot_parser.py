@@ -2,6 +2,100 @@
 SwissProt .dat parser
 '''
 import re
+import os
+from collections import defaultdict
+from collections import ChainMap
+
+class ProteinAnnot(object):
+    '''
+    class to store annotation for a single protein
+    '''
+
+    def __init__(self, prot_id, accession_number_list, prot_description,
+                 prot_gene_name, organism, lineage,
+                 ncbi_tax_id, kw_list, cross_ref_dict):
+        assert isinstance(prot_id, ID)
+        assert isinstance(prot_description, DE)
+        assert isinstance(prot_gene_name, GN)
+        assert isinstance(accession_number_list, list)
+        assert isinstance(organism, str)
+        assert isinstance(lineage, list)
+        assert isinstance(ncbi_tax_id, str)
+        assert isinstance(kw_list, list)
+        assert isinstance(cross_ref_dict, dict)
+        self.prot_id = prot_id
+        self.accession_number_list = accession_number_list
+        self.prot_description = prot_description
+        self.prot_gene_name = prot_gene_name
+        self.organism = organism
+        self.lineage = lineage
+        self.ncbi_tax_id = ncbi_tax_id
+        self.kw_list = kw_list
+        self.cross_ref_dict = cross_ref_dict
+        self._annot_dict = dict(ChainMap(
+            self.prot_id.to_dict(),
+            self.prot_description.to_dict(),
+            self.prot_gene_name.to_dict(),
+            {'accession': self.accession_number_list,
+             'organism': self.organism,
+             'lineage': self.lineage,
+             'ncbi_tax_id': self.ncbi_tax_id,
+             'kw': self.kw_list,
+             'cross_ref': self.cross_ref_dict}))
+
+    def get_id(self):
+        return self.prot_id.entry_name
+
+    def to_dict(self):
+        return self._annot_dict.copy()
+
+    def get_pathologic_dict(self):
+        '''
+        Returns a dictionary with annotations that will be used in pathway tools
+
+        Fields in Pathologic (.pf) file for a gene:
+        ABUNDANCE optional
+        CODING-SEGMENT optional
+        DBLINK optional <DB:Accession> (Use UNIPROT or SP for UniProt accession number)
+        EC recommended
+        STARTBASE, ENDBASE optional
+        FUNCTION required, use "ORF" if unknown
+        FUNCTION-SYNONYM optional
+        GENE-COMMENT optional
+        GO recommended (will be written in DBLINK field)
+        ID highly recommended - unique identifier for the gene
+        METACYC optional - MetaCyc reaction ID assigned for the protein if known
+        NAME required - common name of the gene
+        PRODUCT-TYPE required - P, PSEUDO, TRNA, RRNA, MISC-RNA
+        SYNONYM
+
+        Example
+        -------
+        ;;; The PF file format.
+        ;;; This is a comment in front of an imaginary example record.
+        ;;; It starts with a semicolon. Each record starts with an "ID"
+        ;;; line, and is terminated by a "//" line.
+        ID b1262
+        NAME trpC
+        STARTBASE 1317812
+        ENDBASE 1316451
+        DBLINK SP:P00909
+        PRODUCT-TYPE P
+        SYNONYM foo
+        SYNONYM foo2
+        GENE-COMMENT f453; 99 pct identical to TRPC_ECOLI SW:P00909
+        ;;; The following shows how information about multiple functions of
+        ;;; a protein is supplied:
+        FUNCTION N-(5-phosphoribosyl) anthranilate isomerase
+        EC 5.3.1.24
+        FUNCTION-SYNONYM phosphoribosyl anthranilate isomerase
+        FUNCTION-COMMENT Amino acid biosynthesis: Tryptophan (3rd step)
+        FUNCTION indole-3-glycerolphosphate synthetase
+        EC 4.1.1.48
+        FUNCTION-COMMENT	Amino acid biosynthesis: Tryptophan (4th step)
+        DBLINK GO:0000250
+        //
+        '''
 
 
 class ID(object):
@@ -12,6 +106,11 @@ class ID(object):
         self.entry_name = entry_name
         self.status = status
         self.length = length
+
+    def to_dict(self):
+        return {'entry_name': self.entry_name,
+                'status': self.status,
+                'length': self.length}
 
 
 class DE(object):
@@ -43,6 +142,11 @@ class DE(object):
         return self.__class__(self._full_name_list + other_de._full_name_list,
                               self._short_name_list + other_de._short_name_list,
                               self._ec_list + other_de._ec_list)
+
+    def to_dict(self):
+        return {'full_name': self.get_full_name_list(),
+                'short_name': self.get_short_name_list(),
+                'ec': self.get_ec_list()}
 
 
 class GN(object):
@@ -89,12 +193,105 @@ class GN(object):
                               self._ORF_list + other_de._ORF_list,
                               self._OLN_list + other_de._OLN_list)
 
+    def to_dict(self):
+        return {'name': self.get_name_list(),
+                'ORF': self.get_ORF_list(),
+                'OLN': self.get_OLN_list(),
+                'synonym': self.get_synonym_list()}
+
 
 class SwissProtParser(object):
     '''
     Class to parse SwissProt .dat (annotation) flat file.
     We will only implement the annotation fields that unifam cares about.
     '''
+    @classmethod
+    def read_annot_file(cls, annot_file, start_pos=0, max_records=-1):
+        '''
+        Read SwissProt annotation (flat) file to ProteinAnnot objects.
+
+        Parameters
+        ----------
+        annot_file: str
+            path to the SwissProt .dat file
+        start_pos: int
+            starting pos (in bytes) for the parsing
+        max_records: int
+            maximum number of records to parse before return
+            Default value -1 means there is no limit.
+        '''
+        assert os.path.isfile(annot_file), f'{annot_file} does not exist'
+        assert isinstance(start_pos, int) and start_pos >= 0, start_pos
+        assert isinstance(max_records, int), max_records
+        assert max_records == -1 or max_records > 0, max_records
+
+        id_to_annot = dict()
+        should_parse = True if start_pos == 0 else False
+        with open(annot_file, 'r') as annot_f:
+            annot_f.seek(start_pos)
+            record_lines = []
+            # Use readline so that we can use annot_f.tell()
+            # When using loop `for line in annot_f`, annot_f.tell() cannot be used
+            line = annot_f.readline()
+            while line:
+                if line[:2] == '//':
+                    if should_parse:
+                        protein_annot = cls.get_protein_annot(cls.record_lines_to_dict(record_lines))
+                        id_to_annot[protein_annot.get_id()] = protein_annot
+                        num_annot = len(id_to_annot)
+                        if max_records != -1 and num_annot >= max_records:
+                            print(f'Reached max: {num_annot} records, last read position: {annot_f.tell()}')
+                            break
+                        if num_annot % 1000 == 0:
+                            print(f'Read {num_annot} records...')
+                    else:
+                        print(f'Found // at pos {annot_f.tell()}')
+                        should_parse = True
+                    record_lines = []
+                else:
+                    record_lines.append(line)
+                line = annot_f.readline()
+            last_pos = annot_f.tell()
+        print(f'Read {num_annot} records, last read position: {last_pos}')
+        return id_to_annot
+
+    @classmethod
+    def record_lines_to_dict(cls, record_lines):
+        '''
+        Convert list of record lines for a protein annotation
+        to a dictionary: code --> str
+        with only the interested codes as keys.
+
+        Among the code_list, GN, KW, and DR codes are optional,
+        other codes have at least 1 line of content.
+        '''
+        assert isinstance(record_lines, list), type(record_lines)
+        code_list = ['ID', 'AC', 'DE', 'GN', 'OS', 'OC', 'OX', 'KW', 'DR']
+        code_to_content = defaultdict(str)
+        for line in record_lines:
+            if line[0] == ' ':
+                continue
+            code, content = line.split(maxsplit=1)
+            if code in code_list:
+                if code_to_content[code]:
+                    code_to_content[code] += content if code == 'DR' else content.strip('\n')
+                else:
+                    code_to_content[code] = line if code == 'DR' else line.strip('\n')
+        return code_to_content
+
+    @classmethod
+    def get_protein_annot(cls, code_to_content):
+        return ProteinAnnot(
+            prot_id=cls.read_id_line(code_to_content['ID']),
+            accession_number_list=cls.read_ac_line(code_to_content['AC']),
+            prot_description=cls.read_de_line(code_to_content['DE']),
+            prot_gene_name=cls.read_gn_line(code_to_content['GN']),
+            organism=cls.read_os_line(code_to_content['OS']),
+            lineage=cls.read_oc_line(code_to_content['OC']),
+            ncbi_tax_id=cls.read_ox_line(code_to_content['OX']),
+            kw_list=cls.read_kw_line(code_to_content['KW']),
+            cross_ref_dict=cls.read_dr_line(code_to_content['DR'])
+        )
 
     @classmethod
     def read_id_line(cls, line):
@@ -167,9 +364,9 @@ class SwissProtParser(object):
         ...
         '''
         assert line.startswith('DE '), line
-        full_name_list = cls._get_value_for_key('Full')
-        short_name_list = cls._get_value_for_key('Short')
-        ec_list = cls._get_value_for_key('EC')
+        full_name_list = cls._get_value_for_key(line, 'Full')
+        short_name_list = cls._get_value_for_key(line, 'Short')
+        ec_list = cls._get_value_for_key(line, 'EC')
         return DE(full_name_list, short_name_list, ec_list)
 
     @classmethod
@@ -182,11 +379,13 @@ class SwissProtParser(object):
         GN   Name=<name>; Synonyms=<name1>[, <name2>...]; OrderedLocusNames=<name1>[, <name2>...];
         GN   ORFNames=<name1>[, <name2>...];
         '''
+        if line == '':
+            return GN()
         assert line.startswith('GN '), line
-        name_list = cls._get_value_for_key('Name')
-        synonym_list = cls._get_value_for_key('Synonyms')
-        ORF_list = cls._get_value_for_key('ORFNames')
-        OLN_list = cls._get_value_for_key('OrderedLocusNames')
+        name_list = cls._get_value_for_key(line, 'Name')
+        synonym_list = cls._get_value_for_key(line, 'Synonyms')
+        ORF_list = cls._get_value_for_key(line, 'ORFNames')
+        OLN_list = cls._get_value_for_key(line, 'OrderedLocusNames')
         return GN(name_list, synonym_list, ORF_list, OLN_list)
 
     @classmethod
@@ -236,6 +435,7 @@ class SwissProtParser(object):
         The OX (Organism taxonomy cross-reference) line is used to indicate the identifier
         of a specific organism in a taxonomic database.
         Once.
+        We only care about NCBI_TaxID here.
 
         format:
         OX   Taxonomy_database_Qualifier=Taxonomic code;
@@ -247,8 +447,70 @@ class SwissProtParser(object):
 
         Returns
         -------
+        ncbi_tax_id: str
         '''
         assert line.startswith('OX '), line
         tax_ids = cls._get_value_for_key(line, 'NCBI_TaxID')
         assert len(tax_ids) == 1, f'length of tax_ids is not 1: {tax_ids}'
         return tax_ids[0]
+
+    @classmethod
+    def read_kw_line(cls, line):
+        '''
+        The KW (KeyWord) lines provide information that can be used to generate
+        indexes of the sequence entries based on functional, structural, or other categories.
+        Optional
+
+        format:
+        KW   Keyword[; Keyword...].
+
+        Example
+        -------
+        KW   Protease inhibitor; Proteoglycan; Serine protease inhibitor; Signal;
+        KW   Transmembrane; Zinc.
+
+        Returns
+        -------
+        list of str
+            list of keywords
+        '''
+        if line == '':
+            return []
+        assert line.startswith('KW '), line
+        return [x.strip() for x in line[:-1].split(maxsplit=1)[-1].split(';')]
+
+    @classmethod
+    def read_dr_line(cls, line):
+        '''
+        The DR (Database cross-Reference) lines are used as pointers to information in external data resources that is
+        related to UniProtKB entries.
+        Optional
+
+        format:
+        DR   RESOURCE_ABBREVIATION; RESOURCE_IDENTIFIER; OPTIONAL_INFORMATION_1\
+                [; OPTIONAL_INFORMATION_2][;OPTIONAL_INFORMATION_3].
+
+        Example
+        -------
+        DR   EMBL; AY548484; AAT09660.1; -; Genomic_DNA.
+        DR   RefSeq; YP_031579.1; NC_005946.1.
+        DR   SwissPalm; Q6GZX4; -.
+        DR   GeneID; 2947773; -.
+        DR   KEGG; vg:2947773; -.
+        DR   Proteomes; UP000008770; Genome.
+        DR   GO; GO:0046782; P:regulation of viral transcription; IEA:InterPro.
+
+        Returns
+        -------
+        dict: str --> list of str
+            resource_abbr --> resource identifier
+        '''
+        if line == '':
+            return dict()
+        assert line.startswith('DR '), line
+        cross_ref_dict = defaultdict(list)
+        for resource_line in line.split(maxsplit=1)[-1].split('.\n'):
+            field_list = [x.strip() for x in resource_line.split(';') if x.strip() != '-']
+            if len(field_list) > 1:
+                cross_ref_dict[field_list[0]].append(field_list[1])
+        return dict(cross_ref_dict)
