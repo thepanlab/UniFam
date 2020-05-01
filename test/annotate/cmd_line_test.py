@@ -77,3 +77,16 @@ df = ProteinAnnotator.parse_domtbl_file(domtab_file)  # Only the ones that pass 
 # parse result from old code
 parse_out_file = f'{unifam_root_dir}/example/prok_isolate_genome/output/GuestGenome.domtab_parse.out'
 out_df = pd.read_csv(parse_out_file, sep='\t', header=None, names=['seq_name', 'hmm_name', 'eval'])
+
+# ======================================================================
+
+# SwissProt .dat file parsing
+dat_file = '/home/jj/git/unifam/uniprot_sprot.dat'
+from unifam.db.swiss_prot_parser import SwissProtParser
+id_to_annot = SwissProtParser.read_annot_file(dat_file, max_records=5000)
+# Read 1000 records...
+# Read 2000 records...
+# Read 3000 records...
+# Read 4000 records...
+# Reached max: 5000 records, last read position: 33543260
+# Read 5000 records, last read position: 33543260
