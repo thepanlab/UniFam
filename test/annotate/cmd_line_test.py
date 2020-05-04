@@ -11,6 +11,8 @@ import pandas as pd
 from unifam.annotate.cmd_line import CmdLineGenerator
 from unifam.annotate.parse_util import ProteinAnnotator
 from unifam.base.util import SysUtil
+from unifam.db.usearch_helper import UsearchCluster
+from unifam.db.swiss_prot_parser import SwissProtParser
 
 
 # First load python 3.6.6 on oscer
@@ -79,10 +81,16 @@ parse_out_file = f'{unifam_root_dir}/example/prok_isolate_genome/output/GuestGen
 out_df = pd.read_csv(parse_out_file, sep='\t', header=None, names=['seq_name', 'hmm_name', 'eval'])
 
 # ======================================================================
+# usearch cluster result parsing
+uc_file = '/work/omicsbio/lizhang12/database_build/uniprot_nomsa.uc'
+uc_parser = UsearchCluster(uc_file)
+swiss_prot_cluster_list = sorted(list(uc_parser.get_sp_cluster_set()))
+print(f'number of clusters containing at least 1 swiss prot sequence is {len(swiss_prot_cluster_list)}')
+seq_list = uc_parser.get_seqs_in_cluster(swiss_prot_cluster_list[0])
 
+# ======================================================================
 # SwissProt .dat file parsing
-dat_file = '/home/jj/git/unifam/uniprot_sprot.dat'
-from unifam.db.swiss_prot_parser import SwissProtParser
+dat_file = '/work/omicsbio/lizhang12/database_build/download/uniprot_sprot.dat'
 id_to_annot = SwissProtParser.read_annot_file(dat_file, max_records=5000)
 # Read 1000 records...
 # Read 2000 records...
