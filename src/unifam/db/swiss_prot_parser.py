@@ -6,6 +6,7 @@ import os
 from collections import defaultdict
 from collections import ChainMap
 
+
 class ProteinAnnot(object):
     '''
     class to store annotation for a single protein
@@ -51,7 +52,8 @@ class ProteinAnnot(object):
 
     def get_pathologic_dict(self):
         '''
-        Returns a dictionary with annotations that will be used in pathway tools
+        Returns a dictionary with annotations that will be used in pathway tools.
+        Some fields are not from annotation, such as STARTBASE and ENDBASE.
 
         Fields in Pathologic (.pf) file for a gene:
         ABUNDANCE optional
@@ -96,6 +98,24 @@ class ProteinAnnot(object):
         DBLINK GO:0000250
         //
         '''
+        patho_dict = dict()
+        db_link_list = [f'SP:{ac_num}' for ac_num in self.accession_number_list]
+        if 'GO' in self.cross_ref_dict:
+            db_link_list += self.cross_ref_dict['GO']
+        patho_dict['DBLINK'] = db_link_list
+
+        patho_dict['EC'] = self.prot_description.get_ec_list()
+        patho_dict['FUNCTION'] = (self.prot_description.get_full_name_list() +
+                                  self.prot_description.get_short_name_list())
+        if not len(patho_dict['FUNCTION']):
+            patho_dict['FUNCTION'] = ['ORF']
+        patho_dict['FUNCTION-SYNONYM'] = self.prot_gene_name.get_synonym_list()
+        patho_dict['FUNCTION-COMMENT'] = (self.prot_gene_name.get_ORF_list() +
+                                          self.prot_gene_name.get_OLN_list())
+        patho_dict['NAME'] = self.prot_gene_name.get_name_list()
+        patho_dict['PRODUCT-TYPE'] = ['P']
+
+        return patho_dict
 
 
 class ID(object):
