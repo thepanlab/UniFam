@@ -42,6 +42,7 @@ class ProteinAnnot(object):
              'lineage': self.lineage,
              'ncbi_tax_id': self.ncbi_tax_id,
              'kw': self.kw_list,
+             'GO': self.cross_ref_dict.get('GO', []),
              'cross_ref': self.cross_ref_dict}))
 
     def get_id(self):
@@ -189,7 +190,7 @@ class GN(object):
         assert isinstance(synonym_list, list)
         assert isinstance(ORF_list, list)
         assert isinstance(OLN_list, list)
-        self._name_list = name_list
+        self._name_list = [name.upper() for name in name_list]
         self._synonym_list = synonym_list
         self._ORF_list = ORF_list
         self._OLN_list = OLN_list
