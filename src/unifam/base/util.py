@@ -11,6 +11,8 @@ class SysUtil(object):
     @classmethod
     def mkdir_p(cls, dir_path):
         assert isinstance(dir_path, str), dir_path
+        if dir_path == '':
+            return
         if os.path.exists(dir_path) and os.path.isdir(dir_path):
             return
         try:
