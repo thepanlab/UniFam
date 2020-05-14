@@ -9,6 +9,12 @@ class PathoLogicInput(object):
 
     @classmethod
     def pf_str_from_patho_dict(cls, patho_dict):
+        """
+        Given a dict containing protein annotation information,
+        convert it to string in pathologic input format.
+
+        The keys in `patho_dict` are the annotation fields in pathologic input.
+        """
         assert isinstance(patho_dict, dict)
         pf_str_list = []
         for key, val in patho_dict.items():
