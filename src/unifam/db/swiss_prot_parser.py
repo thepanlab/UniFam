@@ -113,7 +113,11 @@ class ProteinAnnot(object):
              'ncbi_tax_id': self.ncbi_tax_id,
              'kw': self.kw_list,
              'GO': self.cross_ref_dict.get('GO', []),
-             'cross_ref': self.cross_ref_dict}))
+            }))
+
+    def __eq__(self, other):
+        assert isinstance(other, self.__class__)
+        return self.prot_id.entry_name == other.prot_id.entry_name
 
     def get_id(self):
         return self.prot_id.entry_name
@@ -187,6 +191,13 @@ class ProteinAnnot(object):
         patho_dict['PRODUCT-TYPE'] = ['P']
 
         return patho_dict
+
+    def to_cluster_annot_dict(self):
+        """
+        Returns a dict containing a subset of annotation information,
+        that can be used as a protein cluster's annotation.
+        """
+        return {key: val for key, val in self._annot_dict.items() if key in self.CLUSTER_ANNOT_KEYS}
 
 
 class ID(object):
@@ -296,6 +307,26 @@ class SwissProtParser(object):
     Class to parse SwissProt .dat (annotation) flat file.
     We will only implement the annotation fields that unifam cares about.
     '''
+    @classmethod
+    def save_annot(cls, id_to_annot, save_path):
+        '''
+        Save the parsed protein annotation `id_to_annot` to a file at `save_path`.
+        '''
+        assert isinstance(id_to_annot, dict)
+        SysUtil.mkdir_p(os.path.dirname(save_path))
+        with open(save_path, 'w') as save_f:
+            json.dump({prot_id: prot_annot.to_dict() for prot_id, prot_annot in id_to_annot.items()},
+                      save_f, indent=2)
+
+    @classmethod
+    def load_annot(cls, load_path):
+        '''
+        Load the json dumped (by `save_annot`) file to protein annotation dict.
+        '''
+        assert os.path.isfile(load_path), load_path
+        with open(load_path, 'r') as f:
+            return json.load(f)
+
     @classmethod
     def read_annot_file(cls, annot_file, start_pos=0, max_records=-1):
         '''
