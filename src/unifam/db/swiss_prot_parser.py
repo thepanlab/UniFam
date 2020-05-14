@@ -3,14 +3,84 @@ SwissProt .dat parser
 '''
 import re
 import os
+import json
+from unifam.base.util import SysUtil
 from collections import defaultdict
 from collections import ChainMap
+from collections import Counter
+
+
+class ClusterAnnot(object):
+    '''
+    Class to store annotation for a protein cluster that contain at least 1 swiss prot protein.
+
+    Parameters
+    ----------
+    annot_dict_list : list of dict
+        Each dict corresponds to the annotation of a protein in the cluster.
+        Its keys should be a super set of ProteinAnnot.CLUSTER_ANNOT_KEYS.
+    '''
+
+    def __init__(self, annot_dict_list):
+        assert isinstance(annot_dict_list, list)
+        assert annot_dict_list
+        for annot_dict in annot_dict_list:
+            assert isinstance(annot_dict, dict)
+            assert set(annot_dict) >= set(ProteinAnnot.CLUSTER_ANNOT_KEYS), \
+                    f'annot_dict missing keys: {set(ProteinAnnot.CLUSTER_ANNOT_KEYS) - set(annot_dict)}'
+        self._annot_dict_list = annot_dict_list
+
+    @classmethod
+    def from_prot_annot_list(cls, prot_annot_list):
+        '''
+        class method to create instance from list of ProteinAnnot instances
+        '''
+        assert isinstance(prot_annot_list, list), type(prot_annot_list)
+        assert prot_annot_list
+        prot_id_list = [prot_annot.get_id() for prot_annot in prot_annot_list]
+        assert len(prot_id_list) == len(set(prot_id_list)), f'prot_annot_list has duplicate proteins'
+        annot_dict_list = [prot_annot.to_cluster_annot_dict() for prot_annot in prot_annot_list]
+        return cls(annot_dict_list)
+
+    def __len__(self):
+        return len(self._annot_dict_list)
+
+    def get_cluster_annot_dict(self, share_thresh=None):
+        '''
+        When there is more than 1 protein in the cluster,
+        an annotation value should only be used for the cluster
+        if it's shared by >= `share_thresh` * len(cluster) proteins.
+
+        Parameters
+        ----------
+        share_thresh : real
+            real number in [0,1]
+        '''
+        if share_thresh is None:
+            share_thresh = 0.5
+        assert share_thresh >= 0. and share_thresh <= 1., share_thresh
+
+        annot_dict = dict()
+        for k in ProteinAnnot.CLUSTER_ANNOT_KEYS:
+            annot_dict[k] = self._agg_annot(k, share_thresh)
+        return annot_dict
+
+    def _agg_annot(self, annot_key, share_thresh):
+        # concatenate all the annot value lists together to a big list
+        annot_val_list = sum([prot_annot_dict[annot_key]
+                              for prot_annot_dict in self._annot_dict_list],
+                             [])
+        val_counter = Counter(annot_val_list)
+        count_thresh = share_thresh * len(self)
+        return [annot_val for annot_val, count in val_counter.items()
+                if count >= count_thresh]
 
 
 class ProteinAnnot(object):
     '''
     class to store annotation for a single protein
     '''
+    CLUSTER_ANNOT_KEYS = ['kw', 'GO', 'name', 'ORF', 'OLN', 'synonym', 'full_name', 'short_name', 'ec']
 
     def __init__(self, prot_id, accession_number_list, prot_description,
                  prot_gene_name, organism, lineage,
