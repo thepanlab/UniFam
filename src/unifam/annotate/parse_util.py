@@ -1,7 +1,6 @@
 '''
 Utility classes for parsing output
 '''
-import io
 import logging
 import os
 
@@ -88,35 +87,20 @@ class ProteinAnnotator(object):
             used for later filtering.
         """
         assert os.path.isfile(domtbl_file), domtbl_file
-        with open(domtbl_file, 'r') as domtbl_f:
-            # read the first 3 lines, to get the column names and widths
-            _ = domtbl_f.readline()
-            level2_col_line = domtbl_f.readline()
-            width_line = domtbl_f.readline()
-        col_widths = cls._get_widths_from_line(width_line)
-        col_names = cls._get_col_names_from_line(level2_col_line, col_widths)
-        logging.debug(f'column names of the domtab file: {col_names}')
-        col_map = {'# target name': 'seq_name',
-                   'query name': 'hmm_name',
-                   'tlen': 'seq_len',
-                   'qlen': 'hmm_len',
-                   'E-value': 'eval',
-                   'score': 'full_seq_score',
-                   'bias': 'full_seq_bias',
-                   'c-Evalue': 'c_eval',
-                   'i-Evalue': 'i_eval',
-                   '#': 'domain_idx',
-                   'of': 'domain_tot',
-                   'score.1': 'domain_score',
-                   'bias.1': 'domain_bias',
-                   'from': 'hmm_from',
-                   'to': 'hmm_to',
-                   'from.1': 'seq_from',
-                   'to.1': 'seq_to'}
-        assert set(col_map) <= set(col_names), set(col_map) - set(col_names)
-        domtab_df = pd.read_fwf(domtbl_file, widths=col_widths, comment='#', names=col_names,
-                                usecols=list(col_map))
-        domtab_df = domtab_df.rename(columns=col_map, inplace=False).astype({'seq_name': str, 'hmm_name': str})
+        col_names = ['seq_name', 'accession_seq', 'seq_len', 'hmm_name', 'accession_hmm', 'hmm_len', 'eval',
+                     'full_seq_score', 'full_seq_bias',
+                     'domain_idx', 'domain_tot', 'c_eval', 'i_eval', 'domain_score', 'domain_bias', 'hmm_from',
+                     'hmm_to', 'seq_from', 'seq_to', 'env_from', 'env_to', 'accuracy']
+        # 30 columns in total
+        all_col_names = col_names + [f'c_{i}' for i in range(30 - len(col_names))]
+        # Skip the first 3 and last 10 rows, a better approach is to remove lines starting with #
+        # We cannot use comment='#' option because all the lines contain # character
+        # Probably could use fewer columns as well
+        domtab_df = pd.read_csv(domtbl_file, sep='\s+', header=None,
+                                names=all_col_names,
+                                usecols=[col for col in col_names if not col.startswith('accession')],
+                                skiprows=3, skipfooter=10, engine='python').astype(
+            {'seq_name': str, 'hmm_name': str})
         # calculate the ratios for convenience of filtering later
         domtab_df['seq_hmm_len_ratio'] = domtab_df['seq_len'].values / np.maximum(
             domtab_df['hmm_len'].values, 1e-8)
@@ -125,30 +109,6 @@ class ProteinAnnotator(object):
         domtab_df['seq_cover'] = (domtab_df['seq_to'].values -
                                   domtab_df['seq_from'].values + 1) / domtab_df['seq_len'].values
         return domtab_df
-
-    @classmethod
-    def _get_widths_from_line(cls, width_line):
-        """
-        Returns the columns widths from the `width_line`, which has format:
-        #-------- ----- ---------- --------------------\n
-        This is the 3rd line of the domtblout file
-        """
-        assert isinstance(width_line, str), width_line
-        assert width_line.startswith('#-') and width_line.endswith('\n'), width_line
-        widths = [len(dashes) + 1 for dashes in width_line.strip('\n').split(' ')]
-        return widths
-
-    @classmethod
-    def _get_col_names_from_line(cls, col_name_line, col_widths):
-        """
-        Returns the list of column names of the domtblout file from its 2nd line,
-        combined with the column widths inferred from the 3rd line.
-        """
-        assert isinstance(col_name_line, str), col_name_line
-        assert isinstance(col_widths, list)
-        col_names = pd.read_fwf(io.StringIO(col_name_line.strip('\n')),
-                                widths=col_widths).columns.values.tolist()
-        return col_names
 
 
 class ProdigalOutputParser(object):
