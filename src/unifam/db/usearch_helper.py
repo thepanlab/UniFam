@@ -42,7 +42,7 @@ class UsearchCluster(object):
             list of sequence names in the cluster with given `cluster_number`.
         '''
         cluster_df = self._uc_df[self._uc_df['cluster_number'] == cluster_number]
-        seq_list = cluster_df[cluster_df['record_type'] != 'C']['query_label'].values.tolist()
+        seq_list = cluster_df[cluster_df['record_type'] != 'C']['query_id'].values.tolist()
         num_seq_from_C = cluster_df[cluster_df['record_type'] == 'C']['length'].values[0]
         assert len(seq_list) == num_seq_from_C, (f'number of sequences {len(seq_list)} != '
                                                  f'cluster size from C records {num_seq_from_C}')
@@ -75,9 +75,10 @@ class UsearchCluster(object):
         use_cols = [col_name for col_name in field_names if not col_name.startswith('not_used_')]
 
         dtype_dict = {col_name: str for col_name in use_cols}
-        dtype_dict.update({'cluster_number': int, 'length': int, 'pct_identity': float})
+        dtype_dict.update({'length': int, 'pct_identity': float})
 
         uc_df = pd.read_csv(uc_file, sep='\t', header=None, names=field_names, usecols=use_cols,
                             keep_default_na=False, na_values={'pct_identity': '*'},
                             dtype=dtype_dict)
+        uc_df['query_id'] = [l.split('|')[-1] for l in uc_df.query_label.values]
         return uc_df
