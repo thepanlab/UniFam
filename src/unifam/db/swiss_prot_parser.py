@@ -59,6 +59,9 @@ class ClusterAnnot(object):
         if share_thresh is None:
             share_thresh = 0.5
         assert share_thresh >= 0. and share_thresh <= 1., share_thresh
+        if len(self) == 1:
+            return {key: val for key, val in self._annot_dict_list[0].items()
+                    if key in ProteinAnnot.CLUSTER_ANNOT_KEYS}
 
         annot_dict = dict()
         for k in ProteinAnnot.CLUSTER_ANNOT_KEYS:
