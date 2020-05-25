@@ -221,7 +221,7 @@ class ProdigalOutputParser(object):
                     note_line = prod_out.readline()
                     note_dict = cls.cds_note_line_to_dict(note_line.strip('\n'))
                     contig_num, protein_num = note_dict['ID'].split('_')
-                    contigs_info[contig_num]['proteins'][protein_num] = CDS_string
+                    contigs_info[contig_num]['proteins'][protein_num] = cls._parse_cds_str(CDS_string)
 
                 else:
                     continue
@@ -229,55 +229,22 @@ class ProdigalOutputParser(object):
         return contigs_info
 
     @classmethod
-    def write_genetic_element(cls, genetic_element_file, contig_info, annot_format="pf"):
-        '''
-        Write genetic-elements.dat file with the presence of prodigal's output file,
-        which provides more information about the contigs/sequences in the genome
-
-        Input:
-        1.  genetic_elem - file object to write the content
-        2.  contig_info
-        3.  annot_format - annotation format, either .pf or .gbk
-
-        Output:
-        1.  write content to the genetic-elements.dat
-        '''
-
-        SysUtil.mkdir_p(os.path.dirname(genetic_element_file))
-        # counter for each type of sequence
-        plasmid_ct = 0
-        chrsm_ct = 0
-        contig_ct = 0
-        contig_to_annot_file = dict()
-
-        with open(genetic_element_file, 'w') as genetic_elem:
-            for i in contig_info:
-                seq_type = contig_info[i]['seqType']
-                if seq_type == "CHRSM":
-                    chrsm_ct += 1
-                    element_id = seq_type + "-" + str(chrsm_ct)
-                elif seq_type == "PLASMID":
-                    plasmid_ct += 1
-                    element_id = seq_type + "-" + str(plasmid_ct)
-                elif seq_type == 'CONTIG':
-                    contig_ct += 1
-                    element_id = seq_type + "-" + str(contig_ct)
-                else:
-                    raise ValueError(f'seq_type {seq_type} must be CHRSM, PLASMID, or CONTIG')
-
-                seq_id = contig_info[i]['seqID']
-                genetic_elem.write(f'ID\t{element_id}\n')
-                genetic_elem.write(f'NAME\t{seq_id}\n')
-                genetic_elem.write(f'TYPE\t:{seq_type}\n')
-                genetic_elem.write(f'CIRCULAR?\t{contig_info[i]["circular"]}\n')
-
-                annot_file = f'{element_id}.{annot_format}'
-                contig_to_annot_file[i] = annot_file
-
-                genetic_elem.write(f'ANNOT-FILE\t{annot_file}\n')
-                genetic_elem.write(f'SEQ-FILE\t \n')
-                genetic_elem.write("//\n")
-        logging.info(f'genetic_element info is written to {genetic_element_file}')
+    def _parse_cds_str(cls, cds_str):
+        """
+        Convert `cds_str` to a tuple of positions
+        100972..101826' --> (100972, 101826)
+        complement(101963..102763) --> (102763, 101963)
+        """
+        # remove < and > for start and end of contig
+        cds_str = cds_str.replace('<', '').replace('>', '')
+        if cds_str.startswith('complement('):
+            assert cds_str.endswith(')'), f'complement string does not end with ): "{cds_str}"'
+            paren_pos = cds_str.find('(')
+            cds_str = cds_str[(paren_pos + 1):-1]
+            end_pos, start_pos = [int(pos) for pos in cds_str.split('..')]
+        else:
+            start_pos, end_pos = [int(pos) for pos in cds_str.split('..')]
+        return (start_pos, end_pos)
 
 
 class RnaOutputReader(object):
@@ -334,4 +301,6 @@ class RnaOutputReader(object):
         df = pd.read_csv(RNAmmer_gff_file, sep='\t', comment='#', header=None,
                          keep_default_na=False, index_col=False,
                          names=['seq_name', 'source', 'feature', 'start', 'end', 'score', 'pm', 'frame', 'attribute'])
+        df = df.sort_values('start').reset_index(drop=True)
+        df['rRNA_idx'] = np.arange(len(df)) + 1
         return df
