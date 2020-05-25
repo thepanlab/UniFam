@@ -122,6 +122,8 @@ class PathoLogicInput(object):
                 contig_to_annot_file[i] = annot_file
                 annot_file_path = os.path.join(patho_dir, annot_file)
 
+                if os.path.isfile(annot_file_path):
+                    os.remove(annot_file_path)
                 cls._write_rna_annot_file(annot_file_path, rrna_df, seq_id, 'rrna', 'w')
                 cls._write_rna_annot_file(annot_file_path, trna_df, seq_id, 'trna', 'w')
                 cls._write_protein_annot_file(annot_file_path, i, contig_info,
@@ -155,8 +157,8 @@ class PathoLogicInput(object):
                 protein_hmm = protein_subdf['hmm_name'].values[0]
                 protein_patho_dict = cls.prot_cluster_annot_dict_to_patho_dict(
                     cluster_annot_dict[protein_hmm])
-                protein_patho_dict['STARTPOS'] = str(start_pos)
-                protein_patho_dict['ENDPOS'] = str(end_pos)
+                protein_patho_dict['STARTBASE'] = str(start_pos)
+                protein_patho_dict['ENDBASE'] = str(end_pos)
                 protein_patho_dict['NAME'] = protein_seq_name
                 protein_patho_dict['ID'] = f'{contig_num}_protein_{protein_num}'
                 annot_pf.write(cls.pf_str_from_patho_dict(protein_patho_dict))
@@ -187,7 +189,7 @@ class PathoLogicInput(object):
         seq_name = rrna_series['seq_name']
         rrna_idx = rrna_series['rRNA_idx']
         patho_dict['NAME'] = f'rRNA_{rrna_idx}'
-        patho_dict['ID'] = f'{seq_name}_rRNA_{rrna_series["attribute"]}'
+        patho_dict['ID'] = f'rRNA_{rrna_series["attribute"]}'
         strand_pm = rrna_series['pm']
         start_base = rrna_series['start'] if strand_pm == '+' else rrna_series['end']
         end_base = rrna_series['end'] if strand_pm == '+' else rrna_series['start']
@@ -211,8 +213,9 @@ class PathoLogicInput(object):
         assert isinstance(trna_series, pd.Series), type(trna_series)
         patho_dict = dict()
         seq_name = trna_series['seq_name'].strip()
-        patho_dict['NAME'] = f"tRNA_{trna_series['tRNA_idx']}"
-        patho_dict['ID'] = f"{seq_name}_tRNA_idx_{trna_series['tRNA_idx']}"
+        trna_idx = trna_series['tRNA_idx']
+        patho_dict['NAME'] = f"tRNA_{trna_idx}"
+        patho_dict['ID'] = f"tRNA_{trna_idx}"
         patho_dict['STARTBASE'] = str(trna_series['tRNA_begin'])
         patho_dict['ENDBASE'] = str(trna_series['tRNA_end'])
         patho_dict['PRODUCT-TYPE'] = ['TRNA']
