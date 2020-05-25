@@ -334,4 +334,4 @@ class CmdLineHelper(object):
         cpu_option = '' if n_cpu == -1 else f'--cpu {n_cpu}'
 
         return (f'{hmmsearch_path} -E {e_val_ub} --noali {cpu_option} --domtblout {domtbl_out_file} '
-                f'-o {output_file} {input_file} {hmm_db_file}')
+                f'-o {output_file} {hmm_db_file} {input_file}')
