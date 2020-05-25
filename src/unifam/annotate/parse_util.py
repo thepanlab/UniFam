@@ -208,8 +208,10 @@ class ProdigalOutputParser(object):
                     ID_CDS_dict = dict()
                     line = line.strip("\n")
                     seq_key_to_val = cls.header_to_dict(line)
+                    # sequence id (name) is double quoted, we'll remove them
+                    seq_id = seq_key_to_val['seqhdr'].split()[0].strip('"')
                     contigs_info[seq_key_to_val['seqnum']] = {
-                        'seqID': seq_key_to_val['seqhdr'].split()[0],
+                        'seqID': seq_id,
                         'seqType': cls.get_seq_type(line),
                         'circular': 'Y' if cls.is_seq_circular(line) else 'N',
                         'proteins': ID_CDS_dict}
@@ -241,7 +243,7 @@ class ProdigalOutputParser(object):
         1.  write content to the genetic-elements.dat
         '''
 
-        SysUtil.mkdir_p(os.path.join(genetic_element_file))
+        SysUtil.mkdir_p(os.path.dirname(genetic_element_file))
         # counter for each type of sequence
         plasmid_ct = 0
         chrsm_ct = 0
@@ -263,7 +265,9 @@ class ProdigalOutputParser(object):
                 else:
                     raise ValueError(f'seq_type {seq_type} must be CHRSM, PLASMID, or CONTIG')
 
+                seq_id = contig_info[i]['seqID']
                 genetic_elem.write(f'ID\t{element_id}\n')
+                genetic_elem.write(f'NAME\t{seq_id}\n')
                 genetic_elem.write(f'TYPE\t:{seq_type}\n')
                 genetic_elem.write(f'CIRCULAR?\t{contig_info[i]["circular"]}\n')
 
@@ -276,7 +280,7 @@ class ProdigalOutputParser(object):
         logging.info(f'genetic_element info is written to {genetic_element_file}')
 
 
-class OutputReader(object):
+class RnaOutputReader(object):
     """
     Class methods to help read output from various programs
     """
