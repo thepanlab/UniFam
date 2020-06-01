@@ -8,6 +8,47 @@ from unifam.base.util import SysUtil
 from collections import defaultdict
 from collections import ChainMap
 from collections import Counter
+import logging
+
+
+class SpSplitter(object):
+    """
+    Class to split SwissProt sequences and annotation files,
+    to sequences from Eukaryote organisms and non-Eukaryote organisms.
+    """
+
+    def __init__(self, sp_fasta_file, sp_annot_json_file):
+        assert os.path.isfile(sp_fasta_file), sp_fasta_file
+        assert os.path.isfile(sp_annot_json_file), sp_annot_json_file
+        self._fast_file = sp_fasta_file
+        with open(sp_annot_json_file, 'r') as f:
+            self._prot_to_annot = json.load(f)
+        logging.info(f'Load annotation dict with length {len(self._prot_to_annot)}')
+
+    def split(self, output_dir):
+        SysUtil.mkdir_p(os.path.abspath(output_dir))
+        euk_fasta_file = os.path.join(output_dir, 'uniprot_eukaryote.fasta')
+        noneuk_fasta_file = os.path.join(output_dir, 'uniprot_non_eukaryote.fasta')
+
+        euk_entry_names, noneuk_entry_names = [], []
+        output_f = None
+        with open(euk_fasta_file, 'w') as euk_fasta_f:
+            with open(noneuk_fasta_file, 'w') as noneuk_fasta_f:
+                with open(self._fast_file, 'r') as fasta_f:
+                    for line in fasta_f:
+                        if line.startswith('>'):
+                            entry_name = line.split()[0].split('|')[-1]
+                            if self._prot_to_annot[entry_name]['lineage'][0] == 'Eukaryota':
+                                output_f = euk_fasta_f
+                                euk_entry_names.append(entry_name)
+                            else:
+                                output_f = noneuk_fasta_f
+                                noneuk_entry_names.append(entry_name)
+                            output_f.write(line)
+                        else:
+                            output_f.write(line)
+        logging.info(f'Total number of Eukaryote sequences: {len(euk_entry_names)}')
+        logging.info(f'Total number of non-Eukaryote sequences: {len(noneuk_entry_names)}')
 
 
 class ClusterAnnot(object):
