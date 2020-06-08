@@ -347,4 +347,4 @@ class CmdLineHelper(object):
         assert os.path.isdir(patho_input_dir), patho_input_dir
         return (f'{pathologic_path} '
                 f'-no-cel-overview -no-web-tip -no-patch-download -no-web-cel-overview '
-                f'-disable-metadata-saving -no-pre-calc-iphone-data -patho {input_dir}'
+                f'-disable-metadata-saving -no-pre-calc-iphone-data -patho {input_dir}')

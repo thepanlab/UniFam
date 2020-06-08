@@ -86,7 +86,7 @@ def main():
     cluster_annot_path = config.get('UniFam', 'cluster_annot_file')
     logging.info(f'Load cluster annotation file to dict from {cluster_annot_path}')
     annot_dict = SwissProtParser.load_annot(cluster_annot_path)
-    logging.info(f'Cluster annot dict size: {len(annot_dict)}'
+    logging.info(f'Cluster annot dict size: {len(annot_dict)}')
 
     # hmmsearch result
     domtab_file = unifam_dir_spec.get_hmmsearch_domtbl_file()
@@ -121,7 +121,7 @@ def main():
     codon_table = config.get('PathoLogic', 'codon_table', fallback='11')
     PathoLogicInput.write_organism_params(os.path.join(patho_input_dir, 'organism-params.dat'),
                                           PathoLogicInput.get_organism_params_dict(organism, db_id, domain=domain,
-                                                                                   codon_table=codon_table)
+                                                                                   codon_table=codon_table))
     logging.info(f'Written pathway-tools input files to {patho_input_dir}')
 
     pathologic_cmd = cmd_line_gen.get_pathologic_cmd()
