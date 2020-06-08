@@ -40,6 +40,7 @@ def create_parser():
                         help="config file including all the input and paramter specifications")
     return parser
 
+
 def set_up_logger():
     # TODO: set up file logger with specified log file name, and blackhole logger
 
@@ -84,15 +85,15 @@ def main():
         SysUtil.run_cmd(prog_cmd, timeout=None, dry_run=False)
 
     # load cluster annotation
-    cluster_annot_path = config.get('UniFam', 'cluster_annot_file')
+    cluster_annot_path = os.path.expandvars(config.get('UniFam', 'cluster_annot_file'))
     logging.info(f'Load cluster annotation file to dict from {cluster_annot_path}')
     annot_dict = SwissProtParser.load_annot(cluster_annot_path)
     logging.info(f'Cluster annot dict size: {len(annot_dict)}')
 
     # hmmsearch result
     domtab_file = unifam_dir_spec.get_hmmsearch_domtbl_file()
-    seq_coverage = config.get_float('UniFam', 'seq_coverage', fallback=0.5)
-    hmm_coverage = config.get_float('UniFam', 'hmm_coverage', fallback=0.5)
+    seq_coverage = config.getfloat('UniFam', 'seq_coverage', fallback=0.5)
+    hmm_coverage = config.getfloat('UniFam', 'hmm_coverage', fallback=0.5)
     domtab_df = ProteinAnnotator.parse_domtbl_file(domtab_file, seq_coverage, hmm_coverage)
     logging.info(f'Parsed domtab output file {domtab_file} to data frame with length {len(domtab_df)}')
 
@@ -128,6 +129,7 @@ def main():
     pathologic_cmd = cmd_line_gen.get_pathologic_cmd()
     print(f'>>> Run pathway-tools:')
     SysUtil.run_cmd(pathologic_cmd, timeout=None, dry_run=False)
+
 
 if __name__ == '__main__':
     sys.exit(main())

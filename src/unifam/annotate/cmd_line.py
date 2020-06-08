@@ -66,7 +66,7 @@ class CmdLineGenerator(object):
         assert self._config.has_section('hmmsearch')
         assert self._input_format == 'contigs', self._input_format
         hmmsearch_dict = dict(self._config['hmmsearch'])
-        hmmsearch_dict.update({'input_file': self._input_file,
+        hmmsearch_dict.update({'input_file': self.get_input_faa_file(),
                                'domtbl_out_file': self._unifam_dir_spec.get_hmmsearch_domtbl_file(),
                                'output_file': self._unifam_dir_spec.get_hmmsearch_out_file()})
         if 'n_cpu' in hmmsearch_dict:
@@ -78,6 +78,7 @@ class CmdLineGenerator(object):
         pathologic_path = os.path.expandvars(self._config.get('PathoLogic', 'pathologic_path'))
         patho_input_dir = self._unifam_dir_spec.get_patho_input_dir()
         return CmdLineHelper.get_pathologic_cmd(pathologic_path, patho_input_dir)
+
 
 class CmdLineHelper(object):
     """
@@ -347,4 +348,4 @@ class CmdLineHelper(object):
         assert os.path.isdir(patho_input_dir), patho_input_dir
         return (f'{pathologic_path} '
                 f'-no-cel-overview -no-web-tip -no-patch-download -no-web-cel-overview '
-                f'-disable-metadata-saving -no-pre-calc-iphone-data -patho {input_dir}')
+                f'-disable-metadata-saving -no-pre-calc-iphone-data -patho {patho_input_dir}')

@@ -76,7 +76,7 @@ class UniFamDirSpec(object):
         return f'{out_prefix}.tRNA.{out_type}'
 
     def get_tRNAscan_output_file(self):
-        return self.get_tRNAscan_out_file(self._prefix, 'o')
+        return self.get_tRNAscan_out_file(self.get_path_prefix(), 'o')
 
     def get_hmmsearch_domtbl_file(self):
         return os.path.join(self._work_dir, f'{self._prefix}.hmmsearch.domtbl')
