@@ -10,6 +10,7 @@ Sample command
 time PYTHONPATH=~/git/unifam/src python ~/git/unifam/src/unifam/runners/annot_pipeline.py \
         --config_file=~/git/unifam/examples/annotation/prok_isolate_genome.cfg
 
+# modify the config for file locations before running
 '''
 import argparse
 import sys
