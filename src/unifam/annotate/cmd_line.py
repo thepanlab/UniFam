@@ -73,6 +73,11 @@ class CmdLineGenerator(object):
             hmmsearch_dict['n_cpu'] = int(hmmsearch_dict['n_cpu'])
         return CmdLineHelper.get_hmmsearch_cmd(**hmmsearch_dict)
 
+    def get_pathologic_cmd(self):
+        assert self._config.has_section('PathoLogic')
+        pathologic_path = os.path.expandvars(self._config.get('PathoLogic', 'pathologic_path'))
+        patho_input_dir = self._unifam_dir_spec.get_patho_input_dir()
+        return CmdLineHelper.get_pathologic_cmd(pathologic_path, patho_input_dir)
 
 class CmdLineHelper(object):
     """
@@ -335,3 +340,11 @@ class CmdLineHelper(object):
 
         return (f'{hmmsearch_path} -E {e_val_ub} --noali {cpu_option} --domtblout {domtbl_out_file} '
                 f'-o {output_file} {hmm_db_file} {input_file}')
+
+    @classmethod
+    def get_pathologic_cmd(cls, pathologic_path, patho_input_dir):
+        assert SysUtil.is_executable_file(pathologic_path), f'{pathologic_path} is not an executable file'
+        assert os.path.isdir(patho_input_dir), patho_input_dir
+        return (f'{pathologic_path} '
+                f'-no-cel-overview -no-web-tip -no-patch-download -no-web-cel-overview '
+                f'-disable-metadata-saving -no-pre-calc-iphone-data -patho {input_dir}'

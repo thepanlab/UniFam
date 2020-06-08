@@ -75,9 +75,17 @@ class UniFamDirSpec(object):
         assert out_type in {'o', 'structure', 'stat'}, out_type
         return f'{out_prefix}.tRNA.{out_type}'
 
+    def get_tRNAscan_output_file(self):
+        return self.get_tRNAscan_out_file(self._prefix, 'o')
+
     def get_hmmsearch_domtbl_file(self):
         return os.path.join(self._work_dir, f'{self._prefix}.hmmsearch.domtbl')
 
     def get_hmmsearch_out_file(self):
         return os.path.join(self._work_dir, f'{self._prefix}.hmmsearch.out')
 
+    def get_patho_input_dir(self):
+        """
+        Returns the directory that contains the input files for pathway-tools.
+        """
+        return os.path.join(self._work_dir, f'{self._prefix}_patho_input')
