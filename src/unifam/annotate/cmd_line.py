@@ -261,7 +261,7 @@ class CmdLineHelper(object):
         stat_file = UniFamDirSpec.get_tRNAscan_out_file(out_prefix, 'stat')
 
         return (f'{trnascan_path} {domain_option} '
-                f'-o {output_file} -f {struct_file} -m {stat_file} {quiet_tag} '
+                f'--forceow -o {output_file} -f {struct_file} -m {stat_file} {quiet_tag} '
                 f'{input_file}')
 
     @classmethod

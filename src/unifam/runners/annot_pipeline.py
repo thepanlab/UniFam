@@ -13,15 +13,14 @@ time PYTHONPATH=~/git/unifam/src python ~/git/unifam/src/unifam/runners/annot_pi
 '''
 import argparse
 import sys
-import json
 import logging
+import os
 from configparser import ConfigParser
-from unifam.db.swiss_prot_parser import ClusterAnnot
 from unifam.annotate.cmd_line import CmdLineGenerator
 from unifam.annotate.parse_util import ProteinAnnotator
 from unifam.annotate.parse_util import ProdigalOutputParser
+from unifam.annotate.dir_spec import UniFamDirSpec
 from unifam.base.util import SysUtil
-from unifam.db.usearch_helper import UsearchCluster
 from unifam.db.swiss_prot_parser import SwissProtParser
 from unifam.annotate.parse_util import RnaOutputReader
 from unifam.annotate.pathologic_input import PathoLogicInput
@@ -65,7 +64,8 @@ def main():
     config_file = args.config_file
     assert os.path.isfile(config_file), f'{config_file} does not exist'
 
-    config = ConfigParser.read(config_file)
+    config = ConfigParser()
+    config.read(config_file)
     assert isinstance(config, ConfigParser), type(config)
     unifam_dir_spec = UniFamDirSpec.from_config(config)
 
