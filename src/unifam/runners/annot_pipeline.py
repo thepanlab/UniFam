@@ -75,14 +75,20 @@ def main():
 
     prog_to_cmd = {'prodigal': cmd_line_gen.get_prodigal_cmd(),
                    'rnammer': cmd_line_gen.get_RNAmmer_cmd(),
-                   'tRNAscan': cmd_line_gen.get_tRNAscan_cmd(),
-                   'hmmsearch': cmd_line_gen.get_hmmsearch_cmd()
+                   'tRNAscan': cmd_line_gen.get_tRNAscan_cmd()
                    }
 
     for prog, prog_cmd in prog_to_cmd.items():
         print(f'>>> Run {prog}:')
         logging.info(f'>>> Run {prog}:')
         SysUtil.run_cmd(prog_cmd, timeout=None, dry_run=False)
+
+    # hmmsearch uses prodigal output faa file, so we run it separately
+    # after protein, tRNA, and rRNA are found
+    print('>>> Run hmmsearch')
+    logging.info('>>> Run hmmsearch')
+    hmmsearch_cmd = cmd_line_gen.get_hmmsearch_cmd()
+    SysUtil.run_cmd(hmmsearch_cmd, timeout=None, dry_run=False)
 
     # load cluster annotation
     cluster_annot_path = os.path.expandvars(config.get('UniFam', 'cluster_annot_file'))
